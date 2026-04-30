@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>學習計時器 V5.1 深色圓形進度條＋聲音提醒</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: "Microsoft JhengHei", Arial, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top left, rgba(76, 111, 255, 0.22), transparent 34%),
+        radial-gradient(circle at bottom right, rgba(103, 232, 249, 0.12), transparent 32%),
+        linear-gradient(135deg, #090b12, #151824 52%, #0d111a);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #eef2ff;
+      padding: 24px 0;
+    }
+
+    .app {
+      width: min(660px, 92vw);
+      background: rgba(18, 23, 35, 0.94);
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      border-radius: 28px;
+      padding: 32px;
+      box-shadow: 0 22px 60px rgba(0,0,0,0.48);
+      backdrop-filter: blur(14px);
+    }
+
+    h1 {
+      text-align: center;
+      margin: 0 0 8px;
+      font-size: 30px;
+      letter-spacing: 1px;
+      color: #f8fafc;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #94a3b8;
+      margin-bottom: 24px;
+      font-size: 14px;
+    }
+
+    .settings {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+
+    label {
+      display: block;
+      font-size: 14px;
+      color: #a7b0c0;
+      margin-bottom: 6px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px 10px;
+      border: 1px solid rgba(148, 163, 184, 0.32);
+      border-radius: 14px;
+      font-size: 18px;
+      text-align: center;
+      background: #0f172a;
+      color: #f8fafc;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: #60a5fa;
+      box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.16);
+    }
+
+    input:disabled {
+      background: #111827;
+      color: #64748b;
+    }
+
+    .today-box {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .card {
+      background: rgba(15, 23, 42, 0.78);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 18px;
+      padding: 16px;
+      text-align: center;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+    }
+
+    .card-title {
+      color: #94a3b8;
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+
+    .card-value {
+      font-size: 24px;
+      font-weight: 800;
+      color: #f8fafc;
+    }
+
+    .status {
+      text-align: center;
+      margin: 18px 0 12px;
+    }
+
+    .phase {
+      display: inline-block;
+      padding: 8px 18px;
+      border-radius: 999px;
+      background: rgba(59, 130, 246, 0.16);
+      color: #93c5fd;
+      border: 1px solid rgba(147, 197, 253, 0.18);
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .circle-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 10px 0 20px;
+    }
+
+    .progress-ring {
+      position: relative;
+      width: 240px;
+      height: 240px;
+    }
+
+    .progress-ring svg {
+      width: 240px;
+      height: 240px;
+      transform: rotate(-90deg);
+      overflow: visible;
+    }
+
+    .circle-bg {
+      fill: none;
+      stroke: #0b1020;
+      stroke-width: 12;
+    }
+
+    .circle-progress {
+      fill: none;
+      stroke: url(#grad1);
+      stroke-width: 12;
+      stroke-linecap: round;
+      stroke-dasharray: 628.32;
+      stroke-dashoffset: 628.32;
+      transition: stroke-dashoffset 0.35s linear;
+      filter: drop-shadow(0 0 10px rgba(96, 165, 250, 0.35));
+    }
+
+    .circle-inner {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      text-align: center;
+      pointer-events: none;
+    }
+
+    .time {
+      font-size: 44px;
+      line-height: 1.1;
+      font-weight: 900;
+      letter-spacing: 2px;
+      color: #ffffff;
+      text-shadow: 0 0 28px rgba(96, 165, 250, 0.18);
+    }
+
+    .percent {
+      margin-top: 8px;
+      font-size: 18px;
+      font-weight: 700;
+      color: #93c5fd;
+    }
+
+    .total {
+      text-align: center;
+      font-size: 15px;
+      color: #94a3b8;
+      margin-bottom: 22px;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    button {
+      border: none;
+      border-radius: 18px;
+      padding: 16px;
+      font-size: 22px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.08s ease, opacity 0.2s ease, filter 0.2s ease;
+    }
+
+    button:hover:not(:disabled) {
+      filter: brightness(1.08);
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    #startBtn {
+      background: linear-gradient(135deg, #16a34a, #22c55e);
+      color: #fff;
+      box-shadow: 0 10px 24px rgba(34, 197, 94, 0.18);
+    }
+
+    #pauseBtn {
+      background: linear-gradient(135deg, #dc2626, #f97316);
+      color: #fff;
+      box-shadow: 0 10px 24px rgba(248, 113, 113, 0.18);
+    }
+
+    button:disabled {
+      opacity: 0.42;
+      cursor: not-allowed;
+      box-shadow: none !important;
+    }
+
+    .small-buttons {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .small-buttons button {
+      font-size: 15px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      background: #1e293b;
+      color: #dbeafe;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+    }
+
+    .records {
+      margin-top: 18px;
+      border-top: 1px solid rgba(148, 163, 184, 0.16);
+      padding-top: 18px;
+    }
+
+    .records h2 {
+      font-size: 20px;
+      margin: 0 0 12px;
+      text-align: center;
+      color: #f8fafc;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 14px;
+      font-size: 15px;
+      background: rgba(15, 23, 42, 0.72);
+    }
+
+    th, td {
+      padding: 12px 10px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+      text-align: center;
+      color: #e2e8f0;
+    }
+
+    th {
+      background: #1e293b;
+      color: #bfdbfe;
+      font-weight: bold;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .note {
+      margin-top: 18px;
+      font-size: 14px;
+      color: #94a3b8;
+      line-height: 1.7;
+      text-align: center;
+    }
+
+    @media (max-width: 560px) {
+      .settings,
+      .today-box {
+        grid-template-columns: 1fr;
+      }
+      .progress-ring {
+        width: 210px;
+        height: 210px;
+      }
+      .progress-ring svg {
+        width: 210px;
+        height: 210px;
+      }
+      .time {
+        font-size: 38px;
+      }
+      .app {
+        padding: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <h1>學習計時器 V5.1</h1>
+    <div class="subtitle">深色外觀｜圓形進度條｜時間到聲音提醒｜停止＝暫停</div>
+
+    <section class="settings">
+      <div>
+        <label for="targetStudyMinutes">本次學習目標</label>
+        <input id="targetStudyMinutes" type="number" min="1" value="30" />
+      </div>
+      <div>
+        <label for="studyMinutes">每次學習</label>
+        <input id="studyMinutes" type="number" min="1" value="10" />
+      </div>
+      <div>
+        <label for="breakMinutes">每次休息</label>
+        <input id="breakMinutes" type="number" min="1" value="5" />
+      </div>
+    </section>
+
+    <section class="today-box">
+      <div class="card">
+        <div class="card-title">今日日期</div>
+        <div id="todayDate" class="card-value">----</div>
+      </div>
+      <div class="card">
+        <div class="card-title">今日累計學習時間</div>
+        <div id="todayStudyTime" class="card-value">00:00:00</div>
+      </div>
+    </section>
+
+    <section class="status">
+      <span id="phaseText" class="phase">尚未開始</span>
+    </section>
+
+    <div class="circle-wrap">
+      <div class="progress-ring">
+        <svg viewBox="0 0 240 240" aria-hidden="true">
+          <defs>
+            <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#38bdf8" />
+              <stop offset="100%" stop-color="#818cf8" />
+            </linearGradient>
+          </defs>
+          <circle class="circle-bg" cx="120" cy="120" r="100"></circle>
+          <circle id="circleProgress" class="circle-progress" cx="120" cy="120" r="100"></circle>
+        </svg>
+        <div class="circle-inner">
+          <div id="timeDisplay" class="time">10:00</div>
+          <div id="percentText" class="percent">0%</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="totalDisplay" class="total">本次已學習 0 分鐘 / 目標 30 分鐘</div>
+
+    <section class="buttons">
+      <button id="startBtn">開始</button>
+      <button id="pauseBtn" disabled>停止</button>
+    </section>
+
+    <div class="small-buttons">
+      <button id="resetSessionBtn">重新本次計時</button>
+      <button id="testSoundBtn">測試提醒音</button>
+    </div>
+
+    <section class="records">
+      <h2>學習紀錄</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>日期</th>
+            <th>累計學習時間</th>
+          </tr>
+        </thead>
+        <tbody id="recordBody">
+          <tr>
+            <td colspan="2">尚無紀錄</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="small-buttons">
+        <button id="clearTodayBtn">清除今日紀錄</button>
+        <button id="clearAllBtn">清除全部紀錄</button>
+      </div>
+    </section>
+
+    <div class="note">
+      學習時間到、休息時間到、全部完成時都會有聲音提醒。<br>
+      第一次使用可先按「測試提醒音」，確認電腦音量是否正常。<br>
+      今日累計只計算「學習中」的時間，休息時間不會列入。
+    </div>
+  </main>
+
+  <script>
+    const STORAGE_KEY = "TOPAOKO_STUDY_TIMER_RECORDS_V51";
+    const CIRCUMFERENCE = 2 * Math.PI * 100;
+
+    let timer = null;
+    let state = "idle";
+
+    let targetStudySeconds = 30 * 60;
+    let completedStudySeconds = 0;
+
+    let phaseSeconds = 10 * 60;
+    let remainingPhaseSeconds = phaseSeconds;
+    let currentPhase = "study";
+
+    let audioCtx = null;
+
+    const targetInput = document.getElementById("targetStudyMinutes");
+    const studyInput = document.getElementById("studyMinutes");
+    const breakInput = document.getElementById("breakMinutes");
+
+    const todayDate = document.getElementById("todayDate");
+    const todayStudyTime = document.getElementById("todayStudyTime");
+    const phaseText = document.getElementById("phaseText");
+    const timeDisplay = document.getElementById("timeDisplay");
+    const percentText = document.getElementById("percentText");
+    const totalDisplay = document.getElementById("totalDisplay");
+    const circleProgress = document.getElementById("circleProgress");
+    const startBtn = document.getElementById("startBtn");
+    const pauseBtn = document.getElementById("pauseBtn");
+    const resetSessionBtn = document.getElementById("resetSessionBtn");
+    const testSoundBtn = document.getElementById("testSoundBtn");
+    const recordBody = document.getElementById("recordBody");
+    const clearTodayBtn = document.getElementById("clearTodayBtn");
+    const clearAllBtn = document.getElementById("clearAllBtn");
+
+    circleProgress.style.strokeDasharray = CIRCUMFERENCE;
+    circleProgress.style.strokeDashoffset = CIRCUMFERENCE;
+
+    function getAudioContext() {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+      }
+      if (audioCtx.state === "suspended") {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function playTone(frequency, startTime, duration, volume = 0.12) {
+      const ctx = getAudioContext();
+      const oscillator = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      oscillator.type = "sine";
+      oscillator.frequency.setValueAtTime(frequency, startTime);
+
+      gain.gain.setValueAtTime(0.0001, startTime);
+      gain.gain.exponentialRampToValueAtTime(volume, startTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+
+      oscillator.connect(gain);
+      gain.connect(ctx.destination);
+
+      oscillator.start(startTime);
+      oscillator.stop(startTime + duration + 0.03);
+    }
+
+    function playAlarm(type = "normal") {
+      try {
+        const ctx = getAudioContext();
+        const now = ctx.currentTime;
+
+        if (type === "studyEnd") {
+          playTone(880, now, 0.22);
+          playTone(988, now + 0.28, 0.22);
+        } else if (type === "breakEnd") {
+          playTone(660, now, 0.18);
+          playTone(880, now + 0.22, 0.18);
+          playTone(1046, now + 0.44, 0.22);
+        } else if (type === "finish") {
+          playTone(784, now, 0.18);
+          playTone(988, now + 0.22, 0.18);
+          playTone(1175, now + 0.44, 0.18);
+          playTone(1568, now + 0.66, 0.38);
+        } else {
+          playTone(880, now, 0.2);
+          playTone(1046, now + 0.25, 0.25);
+        }
+      } catch (e) {
+        console.log("音效無法播放", e);
+      }
+    }
+
+    function getTodayKey() {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, "0");
+      const d = String(now.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    }
+
+    function pad(num) {
+      return String(num).padStart(2, "0");
+    }
+
+    function formatTimer(seconds) {
+      const safe = Math.max(0, seconds);
+      const m = Math.floor(safe / 60);
+      const s = safe % 60;
+      return `${pad(m)}:${pad(s)}`;
+    }
+
+    function formatLongTime(seconds) {
+      const h = Math.floor(seconds / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      const s = seconds % 60;
+      return `${pad(h)}:${pad(m)}:${pad(s)}`;
+    }
+
+    function formatReadable(seconds) {
+      const h = Math.floor(seconds / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      const s = seconds % 60;
+
+      if (h > 0) return `${h} 小時 ${m} 分 ${s} 秒`;
+      if (m > 0) return `${m} 分 ${s} 秒`;
+      return `${s} 秒`;
+    }
+
+    function getNumber(input, fallback) {
+      const value = parseInt(input.value, 10);
+      return Number.isFinite(value) && value > 0 ? value : fallback;
+    }
+
+    function loadRecords() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : {};
+      } catch (e) {
+        return {};
+      }
+    }
+
+    function saveRecords(records) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+    }
+
+    function addStudySecond() {
+      const key = getTodayKey();
+      const records = loadRecords();
+      records[key] = (records[key] || 0) + 1;
+      saveRecords(records);
+    }
+
+    function renderRecords() {
+      const records = loadRecords();
+      const keys = Object.keys(records).sort().reverse();
+
+      todayDate.textContent = getTodayKey();
+      todayStudyTime.textContent = formatLongTime(records[getTodayKey()] || 0);
+
+      if (keys.length === 0) {
+        recordBody.innerHTML = `<tr><td colspan="2">尚無紀錄</td></tr>`;
+        return;
+      }
+
+      recordBody.innerHTML = keys.map(key => {
+        return `<tr><td>${key}</td><td>${formatReadable(records[key])}</td></tr>`;
+      }).join("");
+    }
+
+    function setPhaseStyle(text, bg, color, borderColor) {
+      phaseText.textContent = text;
+      phaseText.style.background = bg;
+      phaseText.style.color = color;
+      phaseText.style.borderColor = borderColor || "rgba(148, 163, 184, 0.18)";
+    }
+
+    function updateDisplay() {
+      timeDisplay.textContent = formatTimer(remainingPhaseSeconds);
+
+      const finishedMinutes = Math.floor(completedStudySeconds / 60);
+      const targetMinutes = Math.floor(targetStudySeconds / 60);
+      totalDisplay.textContent = `本次已學習 ${finishedMinutes} 分鐘 / 目標 ${targetMinutes} 分鐘`;
+
+      const percent = targetStudySeconds === 0 ? 0 : (completedStudySeconds / targetStudySeconds) * 100;
+      const safePercent = Math.min(100, Math.max(0, percent));
+      const offset = CIRCUMFERENCE * (1 - safePercent / 100);
+
+      circleProgress.style.strokeDashoffset = offset;
+      percentText.textContent = `${Math.round(safePercent)}%`;
+
+      renderRecords();
+    }
+
+    function updateButtons() {
+      if (state === "idle") {
+        startBtn.textContent = "開始";
+        startBtn.disabled = false;
+        pauseBtn.disabled = true;
+        setInputsDisabled(false);
+      } else if (state === "running") {
+        startBtn.textContent = "開始";
+        startBtn.disabled = true;
+        pauseBtn.disabled = false;
+        setInputsDisabled(true);
+      } else if (state === "paused") {
+        startBtn.textContent = "繼續";
+        startBtn.disabled = false;
+        pauseBtn.disabled = true;
+        setInputsDisabled(true);
+      } else if (state === "finished") {
+        startBtn.textContent = "重新開始";
+        startBtn.disabled = false;
+        pauseBtn.disabled = true;
+        setInputsDisabled(false);
+      }
+    }
+
+    function setInputsDisabled(disabled) {
+      targetInput.disabled = disabled;
+      studyInput.disabled = disabled;
+      breakInput.disabled = disabled;
+    }
+
+    function resetSession() {
+      clearInterval(timer);
+      timer = null;
+      state = "idle";
+
+      targetStudySeconds = getNumber(targetInput, 30) * 60;
+      completedStudySeconds = 0;
+
+      currentPhase = "study";
+      phaseSeconds = getNumber(studyInput, 10) * 60;
+      remainingPhaseSeconds = Math.min(phaseSeconds, targetStudySeconds);
+
+      setPhaseStyle("尚未開始", "rgba(59, 130, 246, 0.16)", "#93c5fd", "rgba(147, 197, 253, 0.18)");
+
+      updateButtons();
+      updateDisplay();
+    }
+
+    function startNewSession() {
+      targetStudySeconds = getNumber(targetInput, 30) * 60;
+      completedStudySeconds = 0;
+
+      currentPhase = "study";
+      phaseSeconds = getNumber(studyInput, 10) * 60;
+      remainingPhaseSeconds = Math.min(phaseSeconds, targetStudySeconds);
+    }
+
+    function switchPhase() {
+      if (currentPhase === "study") {
+        playAlarm("studyEnd");
+
+        currentPhase = "break";
+        phaseSeconds = getNumber(breakInput, 5) * 60;
+        remainingPhaseSeconds = phaseSeconds;
+        setPhaseStyle("休息中", "rgba(251, 191, 36, 0.14)", "#facc15", "rgba(250, 204, 21, 0.22)");
+      } else {
+        playAlarm("breakEnd");
+
+        currentPhase = "study";
+        phaseSeconds = getNumber(studyInput, 10) * 60;
+        const remainingStudyTarget = targetStudySeconds - completedStudySeconds;
+        remainingPhaseSeconds = Math.min(phaseSeconds, remainingStudyTarget);
+        setPhaseStyle("學習中", "rgba(34, 197, 94, 0.14)", "#86efac", "rgba(134, 239, 172, 0.2)");
+      }
+    }
+
+    function finishTimer() {
+      clearInterval(timer);
+      timer = null;
+      state = "finished";
+
+      remainingPhaseSeconds = 0;
+      setPhaseStyle("完成！", "rgba(129, 140, 248, 0.16)", "#c4b5fd", "rgba(196, 181, 253, 0.22)");
+
+      updateButtons();
+      updateDisplay();
+      playAlarm("finish");
+
+      setTimeout(() => {
+        alert("本次學習目標完成！");
+      }, 200);
+    }
+
+    function runTick() {
+      remainingPhaseSeconds -= 1;
+
+      if (currentPhase === "study") {
+        completedStudySeconds += 1;
+        addStudySecond();
+
+        if (completedStudySeconds >= targetStudySeconds) {
+          finishTimer();
+          return;
+        }
+      }
+
+      if (remainingPhaseSeconds <= 0) {
+        switchPhase();
+      }
+
+      updateDisplay();
+    }
+
+    function startOrResumeTimer() {
+      if (state === "running") return;
+
+      getAudioContext();
+
+      if (state === "idle" || state === "finished") {
+        startNewSession();
+      }
+
+      state = "running";
+
+      if (currentPhase === "study") {
+        setPhaseStyle("學習中", "rgba(34, 197, 94, 0.14)", "#86efac", "rgba(134, 239, 172, 0.2)");
+      } else {
+        setPhaseStyle("休息中", "rgba(251, 191, 36, 0.14)", "#facc15", "rgba(250, 204, 21, 0.22)");
+      }
+
+      updateButtons();
+      updateDisplay();
+
+      timer = setInterval(runTick, 1000);
+    }
+
+    function pauseTimer() {
+      if (state !== "running") return;
+
+      clearInterval(timer);
+      timer = null;
+      state = "paused";
+
+      if (currentPhase === "study") {
+        setPhaseStyle("已暫停：學習中", "rgba(148, 163, 184, 0.14)", "#cbd5e1", "rgba(203, 213, 225, 0.18)");
+      } else {
+        setPhaseStyle("已暫停：休息中", "rgba(148, 163, 184, 0.14)", "#cbd5e1", "rgba(203, 213, 225, 0.18)");
+      }
+
+      updateButtons();
+      updateDisplay();
+    }
+
+    startBtn.addEventListener("click", startOrResumeTimer);
+    pauseBtn.addEventListener("click", pauseTimer);
+    resetSessionBtn.addEventListener("click", resetSession);
+    testSoundBtn.addEventListener("click", () => playAlarm("finish"));
+
+    targetInput.addEventListener("input", resetSession);
+    studyInput.addEventListener("input", resetSession);
+    breakInput.addEventListener("input", resetSession);
+
+    clearTodayBtn.addEventListener("click", () => {
+      if (!confirm("確定要清除今日學習紀錄嗎？")) return;
+      const records = loadRecords();
+      delete records[getTodayKey()];
+      saveRecords(records);
+      renderRecords();
+    });
+
+    clearAllBtn.addEventListener("click", () => {
+      if (!confirm("確定要清除全部學習紀錄嗎？")) return;
+      saveRecords({});
+      renderRecords();
+    });
+
+    resetSession();
+    renderRecords();
+  </script>
+</body>
+</html>
