@@ -15,7 +15,7 @@
 <body>
   <main class="app">
     <h1>學習計時器 V5.3</h1>
-    <div class="subtitle">雲端同步版｜PIN 保護操作｜手機、電腦打開同一網址會看到同一份最新狀態<br>查看不用 PIN，開始 / 停止 / 清除 / 修改時間需要 PIN</div>
+    <div class="subtitle"></div>
     <div class="cloud-status"><span id="cloudDot" class="dot"></span><span id="cloudText">雲端連線中...</span></div>
     <div class="pin-panel" id="pinPanel">
       <div class="pin-title">操作保護</div>
@@ -52,7 +52,7 @@ function compute(d,t=nowMs()){let s=settings(d),st=d.state||defaultData.state,st
 function recordUpdates(d,c){let st=d.state||{},day=st.dayBaseDate||todayKey(),base=st.dayBaseSeconds||0,u={};u[`records/${day}`]=base+(c.completedStudy||0);return u}
 function todayTotal(d,c){let today=todayKey(),records=d.records||{},st=d.state||{},base=(st.dayBaseDate===today)?Math.max(records[today]||0,st.dayBaseSeconds||0):(records[today]||0),live=(['running','paused','finished'].includes(st.status)&&st.dayBaseDate===today)?c.completedStudy:0;return Math.max(base,(st.dayBaseSeconds||0)+live)}
 function setPhase(text,bg,color,border){phaseText.textContent=text;phaseText.style.background=bg;phaseText.style.color=color;phaseText.style.borderColor=border||"rgba(148,163,184,.18)"}function requireUnlock(){if(pinUnlocked)return true;alert("請先輸入 PIN 解鎖操作。");pinInput.focus();return false}
-function updatePinUI(){if(pinUnlocked){pinStatus.textContent="已解鎖：可以操作計時器";pinStatus.className="pin-status unlocked";pinMsg.textContent="這個分頁已解鎖。使用完可以按「鎖定」避免他人操作。";pinInput.value=""}else{pinStatus.textContent="目前只能查看，要操作請輸入 PIN。";pinStatus.className="pin-status locked";pinMsg.textContent="查看最新狀態不用 PIN；開始、停止、重新計時、清除紀錄與修改時間需要 PIN。";[startBtn,pauseBtn,resetSessionBtn,clearTodayBtn,clearAllBtn].forEach(b=>b.disabled=true);targetInput.disabled=true;studyInput.disabled=true;breakInput.disabled=true}}
+function updatePinUI(){if(pinUnlocked){pinStatus.textContent="已解鎖：可以操作計時器";pinStatus.className="pin-status unlocked";pinMsg.textContent="";pinInput.value=""}else{pinStatus.textContent="目前只能查看，要操作請輸入 PIN。";pinStatus.className="pin-status locked";pinMsg.textContent="查看最新狀態不用 PIN；開始、停止、重新計時、清除紀錄與修改時間需要 PIN。";[startBtn,pauseBtn,resetSessionBtn,clearTodayBtn,clearAllBtn].forEach(b=>b.disabled=true);targetInput.disabled=true;studyInput.disabled=true;breakInput.disabled=true}}
 function unlockPin(){if(pinInput.value===CONTROL_PIN){pinUnlocked=true;sessionStorage.setItem("studyTimerPinUnlocked","1");updatePinUI();render()}else{pinMsg.textContent="PIN 錯誤，請再試一次。";pinInput.select()}}
 function lockPin(){pinUnlocked=false;sessionStorage.removeItem("studyTimerPinUnlocked");updatePinUI();render()}
 function setInputsDisabled(x){let locked=!pinUnlocked;targetInput.disabled=x||locked;studyInput.disabled=x||locked;breakInput.disabled=x||locked}
