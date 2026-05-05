@@ -1,635 +1,549 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>計時器 V2.2</title>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
-  <style>
-    *{box-sizing:border-box;font-family:"Microsoft JhengHei",Arial,sans-serif}
-    body{margin:0;min-height:100vh;background:radial-gradient(circle at top left,rgba(76,111,255,.22),transparent 34%),radial-gradient(circle at bottom right,rgba(103,232,249,.12),transparent 32%),linear-gradient(135deg,#090b12,#151824 52%,#0d111a);display:flex;align-items:center;justify-content:center;color:#eef2ff;padding:24px 0}
-    .app{width:min(760px,94vw);background:rgba(18,23,35,.94);border:1px solid rgba(148,163,184,.22);border-radius:28px;padding:32px;box-shadow:0 22px 60px rgba(0,0,0,.48);backdrop-filter:blur(14px)}
-    h1{text-align:center;margin:0 0 16px;font-size:30px;letter-spacing:1px;color:#f8fafc}
-    .cloud-status{display:flex;justify-content:center;align-items:center;gap:8px;color:#94a3b8;font-size:13px;margin-bottom:18px}
-    .dot{width:9px;height:9px;border-radius:999px;background:#64748b;box-shadow:0 0 10px rgba(100,116,139,.4)}
-    .dot.online{background:#22c55e;box-shadow:0 0 12px rgba(34,197,94,.6)}
-    .dot.offline{background:#ef4444;box-shadow:0 0 12px rgba(239,68,68,.6)}
-    .pin-panel,.item-panel,.settings,.fitness-panel{background:rgba(15,23,42,.72);border:1px solid rgba(148,163,184,.18);border-radius:18px;padding:14px;margin:0 0 18px;text-align:center}
-    .pin-title,.item-title,.panel-title{font-size:17px;font-weight:800;color:#f8fafc;margin-bottom:10px}
-    .pin-status{font-size:14px;color:#fca5a5;margin-bottom:10px}
-    .pin-status.unlocked{color:#86efac}
-    .pin-row,.item-row,.fitness-row{display:grid;gap:10px;align-items:center}
-    .pin-row{grid-template-columns:1fr auto auto}
-    .item-row{grid-template-columns:1fr 1fr}
-    .fitness-row{grid-template-columns:1fr 1fr 1fr}
-    label{display:block;font-size:14px;color:#a7b0c0;margin-bottom:6px;text-align:left}
-    input,select{width:100%;padding:12px 10px;border:1px solid rgba(148,163,184,.32);border-radius:14px;font-size:18px;text-align:center;background:#0f172a;color:#f8fafc;outline:none}
-    input:focus,select:focus{border-color:#60a5fa;box-shadow:0 0 0 3px rgba(96,165,250,.16)}
-    input:disabled,select:disabled{background:#111827;color:#64748b}
-    .settings{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
-    .hint{font-size:12px;color:#94a3b8;margin-top:6px;text-align:center;line-height:1.5}
-    .today-box{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px}
-    .card{background:rgba(15,23,42,.78);border:1px solid rgba(148,163,184,.18);border-radius:18px;padding:16px;text-align:center;box-shadow:inset 0 1px 0 rgba(255,255,255,.03)}
-    .card-title{color:#94a3b8;font-size:14px;margin-bottom:8px}
-    .card-value{font-size:24px;font-weight:800;color:#f8fafc}
-    .status{text-align:center;margin:18px 0 12px}
-    .phase{display:inline-block;padding:8px 18px;border-radius:999px;background:rgba(59,130,246,.16);color:#93c5fd;border:1px solid rgba(147,197,253,.18);font-size:18px;font-weight:bold}
-    .circle-wrap{display:flex;align-items:center;justify-content:center;margin:10px 0 20px}
-    .progress-ring{position:relative;width:240px;height:240px}
-    .progress-ring svg{width:240px;height:240px;transform:rotate(-90deg);overflow:visible}
-    .circle-bg{fill:none;stroke:#0b1020;stroke-width:12}
-    .circle-progress{fill:none;stroke:url(#grad1);stroke-width:12;stroke-linecap:round;stroke-dasharray:628.32;stroke-dashoffset:628.32;transition:stroke-dashoffset .35s linear;filter:drop-shadow(0 0 10px rgba(96,165,250,.35))}
-    .circle-inner{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;pointer-events:none}
-    .time{font-size:44px;line-height:1.1;font-weight:900;letter-spacing:2px;color:#fff;text-shadow:0 0 28px rgba(96,165,250,.18)}
-    .percent{margin-top:8px;font-size:18px;font-weight:700;color:#93c5fd}
-    .total{text-align:center;font-size:15px;color:#94a3b8;margin-bottom:22px;line-height:1.8}
-    .buttons{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
-    button{border:none;border-radius:18px;padding:16px;font-size:22px;font-weight:bold;cursor:pointer;transition:transform .08s ease,opacity .2s ease,filter .2s ease}
-    button:hover:not(:disabled){filter:brightness(1.08)}
-    button:active{transform:scale(.98)}
-    button:disabled{opacity:.42;cursor:not-allowed;box-shadow:none!important}
-    #startBtn{background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;box-shadow:0 10px 24px rgba(34,197,94,.18)}
-    #pauseBtn{background:linear-gradient(135deg,#dc2626,#f97316);color:#fff;box-shadow:0 10px 24px rgba(248,113,113,.18)}
-    .pin-row button,.small-buttons button{font-size:15px;padding:10px 14px;border-radius:12px;background:#1e293b;color:#dbeafe;border:1px solid rgba(148,163,184,.18)}
-    .pin-row .unlock{background:linear-gradient(135deg,#2563eb,#3b82f6);color:#fff}
-    .small-buttons{display:flex;justify-content:center;flex-wrap:wrap;gap:10px;margin-top:14px}
-    .fitness-actions{display:flex;justify-content:center;flex-wrap:wrap;gap:10px;margin:0 0 14px}
-    .fitness-actions button{font-size:16px;padding:12px 16px;border-radius:14px;background:#1e293b;color:#dbeafe;border:1px solid rgba(148,163,184,.18)}
-    .records{margin-top:18px;border-top:1px solid rgba(148,163,184,.16);padding-top:18px}
-    .records h2{font-size:20px;margin:0 0 12px;text-align:center;color:#f8fafc}
-    .table-wrap{overflow-x:auto;border-radius:14px}
-    table{width:100%;min-width:650px;border-collapse:collapse;border-radius:14px;font-size:15px;background:rgba(15,23,42,.72)}
-    th,td{padding:12px 10px;border-bottom:1px solid rgba(148,163,184,.14);text-align:center;color:#e2e8f0;white-space:nowrap}
-    th{background:#1e293b;color:#bfdbfe;font-weight:bold}
-    tr:last-child td{border-bottom:none}
-    .detail-btn{font-size:14px!important;padding:7px 10px!important;border-radius:10px!important;background:#334155!important;color:#e0f2fe!important}
-    .footer{margin-top:18px;font-size:14px;color:#94a3b8;line-height:1.7;text-align:center}
-    .hidden{display:none!important}
-    @media(max-width:720px){.settings,.today-box,.pin-row,.item-row,.fitness-row{grid-template-columns:1fr}}
-    @media(max-width:560px){.progress-ring{width:210px;height:210px}.progress-ring svg{width:210px;height:210px}.time{font-size:38px}.app{padding:24px}}
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Yu工具箱_V1.0</title>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+
+<style>
+:root{
+  --bg:#0b1020;--card:#141b2f;--card2:#101729;--line:#27324d;--text:#f6f7fb;--muted:#aeb8d0;
+  --blue:#7dd3fc;--purple:#c4b5fd;--green:#86efac;--yellow:#fde68a;--red:#fca5a5;
+  --orange:#ffad66;--orange2:#ff8b3d;--shadow:0 18px 50px rgba(0,0,0,.35);--r:22px;
+}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{
+  margin:0;
+  background:
+    radial-gradient(circle at top left,rgba(76,111,255,.22),transparent 34%),
+    radial-gradient(circle at bottom right,rgba(103,232,249,.12),transparent 32%),
+    linear-gradient(160deg,#080c18 0%,#0b1020 50%,#111827 100%);
+  color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC","Microsoft JhengHei",Arial,sans-serif;
+}
+button,input,textarea,select{font:inherit}
+button{
+  border:1px solid rgba(255,255,255,.12);
+  background:#1c2540;color:var(--text);
+  border-radius:16px;padding:12px 14px;cursor:pointer;
+  transition:.15s transform,.15s background,.15s border,.15s opacity;
+  font-weight:800;
+}
+button:hover:not(:disabled){transform:translateY(-1px);background:#24304f}
+button:disabled{opacity:.45;cursor:not-allowed;transform:none}
+button.primary{background:linear-gradient(135deg,#0ea5e9,#8b5cf6);border:none}
+button.good{background:rgba(34,197,94,.18);border-color:rgba(134,239,172,.5)}
+button.warn{background:rgba(234,179,8,.17);border-color:rgba(253,230,138,.5)}
+button.danger{background:rgba(239,68,68,.18);border-color:rgba(252,165,165,.5)}
+button.ghost{background:transparent}
+input,textarea,select{
+  width:100%;background:#0e1527;border:1px solid rgba(255,255,255,.14);
+  color:var(--text);border-radius:14px;padding:12px 13px;outline:none;
+}
+textarea{min-height:110px;resize:vertical;line-height:1.65}
+input:focus,textarea:focus,select:focus{border-color:var(--blue);box-shadow:0 0 0 4px rgba(125,211,252,.12)}
+label{display:block;color:var(--muted);font-size:13px;margin:10px 0 6px}
+h1,h2,h3{margin:0}
+hr{border:0;border-top:1px solid rgba(255,255,255,.09);margin:18px 0}
+.hide{display:none!important}
+.app{max-width:1120px;margin:0 auto;padding:18px 14px 70px}
+.topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px}
+.title h1{font-size:26px;line-height:1.15}
+.title p{margin:6px 0 0;color:var(--muted);font-size:13px;line-height:1.6}
+.pill{display:inline-flex;align-items:center;gap:6px;background:rgba(125,211,252,.12);border:1px solid rgba(125,211,252,.25);color:#dff7ff;border-radius:999px;padding:8px 11px;font-size:13px;white-space:nowrap}
+.card{background:rgba(20,27,47,.92);border:1px solid rgba(255,255,255,.08);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden;margin-bottom:14px}
+.section{padding:16px}
+.section + .section{border-top:1px solid rgba(255,255,255,.08)}
+.small{font-size:12px;color:var(--muted);line-height:1.6}
+.muted{color:var(--muted)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.navBtn{border-radius:999px;padding:9px 12px;font-size:13px}
+.makerFooter{text-align:center;color:var(--muted);font-size:12px;letter-spacing:.5px;opacity:.85;margin-top:16px}
+
+/* Home */
+.homeWrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:22px 14px}
+.homeCard{width:min(880px,94vw)}
+.pinBox{display:grid;grid-template-columns:1fr auto;gap:10px;margin-top:14px}
+.toolGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px}
+.toolCard{padding:20px;border-radius:24px;background:rgba(16,23,41,.75);border:1px solid rgba(255,255,255,.1);cursor:pointer;transition:.15s;min-height:150px}
+.toolCard:hover{transform:translateY(-2px);border-color:rgba(125,211,252,.45);background:rgba(125,211,252,.08)}
+.toolIcon{font-size:34px;margin-bottom:10px}
+.toolTitle{font-size:22px;font-weight:900}
+.toolDesc{color:var(--muted);font-size:13px;line-height:1.6;margin-top:8px}
+
+/* Timer */
+.timerApp{max-width:720px}
+.cloud-status{display:flex;justify-content:center;align-items:center;gap:8px;color:var(--muted);font-size:13px;margin:8px 0 14px}
+.dot{width:9px;height:9px;border-radius:999px;background:#64748b}
+.dot.online{background:#22c55e;box-shadow:0 0 12px rgba(34,197,94,.6)}
+.dot.offline{background:#ef4444;box-shadow:0 0 12px rgba(239,68,68,.6)}
+.timerSettings{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.todayBox{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.statCard{background:rgba(15,23,42,.78);border:1px solid rgba(148,163,184,.18);border-radius:18px;padding:16px;text-align:center}
+.statCard .k{color:var(--muted);font-size:14px;margin-bottom:8px}.statCard .v{font-size:24px;font-weight:900}
+.phase{text-align:center;margin:18px 0 12px}
+.phase span{display:inline-block;padding:8px 18px;border-radius:999px;background:rgba(59,130,246,.16);color:#93c5fd;border:1px solid rgba(147,197,253,.18);font-size:18px;font-weight:bold}
+.circle-wrap{display:flex;align-items:center;justify-content:center;margin:10px 0 20px}
+.progress-ring{position:relative;width:240px;height:240px}
+.progress-ring svg{width:240px;height:240px;transform:rotate(-90deg);overflow:visible}
+.circle-bg{fill:none;stroke:#0b1020;stroke-width:12}
+.circle-progress{fill:none;stroke:url(#grad1);stroke-width:12;stroke-linecap:round;stroke-dasharray:628.32;stroke-dashoffset:628.32;transition:stroke-dashoffset .35s linear;filter:drop-shadow(0 0 10px rgba(96,165,250,.35))}
+.circle-inner{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;pointer-events:none}
+.timeBig{font-size:44px;line-height:1.1;font-weight:900;letter-spacing:2px;color:#fff;text-shadow:0 0 28px rgba(96,165,250,.18)}
+.percent{margin-top:8px;font-size:18px;font-weight:800;color:#93c5fd}
+.timerTotal{text-align:center;font-size:15px;color:var(--muted);margin-bottom:22px;line-height:1.8}
+.timerBtns{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.timerBtns button{font-size:22px;padding:16px}
+#timerStartBtn{background:linear-gradient(135deg,#16a34a,#22c55e);border:none}
+#timerPauseBtn{background:linear-gradient(135deg,#dc2626,#f97316);border:none}
+.tableWrap{overflow-x:auto;border-radius:14px}
+table{width:100%;border-collapse:collapse;border-radius:14px;font-size:14px;background:rgba(15,23,42,.72)}
+th,td{padding:11px 9px;border-bottom:1px solid rgba(148,163,184,.14);text-align:center;color:#e2e8f0;white-space:nowrap}
+th{background:#1e293b;color:#bfdbfe;font-weight:bold}
+tr:last-child td{border-bottom:none}
+
+/* Fitness */
+.fitLayout{display:grid;grid-template-columns:360px 1fr;gap:14px}
+.workoutBtns,.exerciseList,.historyList{display:grid;gap:9px}
+.workoutCard,.exercise{border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:12px;background:rgba(16,23,41,.7);cursor:pointer}
+.workoutCard.active,.exercise.active{border-color:rgba(125,211,252,.7);background:rgba(14,165,233,.12)}
+.exercise.done{border-color:rgba(134,239,172,.35);background:rgba(34,197,94,.09)}
+.exerciseTop{display:flex;justify-content:space-between;gap:10px}
+.exerciseName{font-weight:800}
+.tag{font-size:12px;color:#dbeafe;border:1px solid rgba(125,211,252,.25);border-radius:999px;padding:4px 8px;background:rgba(125,211,252,.1);white-space:nowrap}
+.plan{font-size:13px;color:#d8def0;margin-top:7px;line-height:1.45}
+.note{font-size:12px;color:var(--muted);margin-top:6px}
+.statusBar{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.fitStat{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:12px}
+.fitStat b{display:block;font-size:22px;margin-top:3px}
+.timerBox{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.fitTimer{background:radial-gradient(circle at 20% 20%,rgba(125,211,252,.22),transparent 32%),rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.1);border-radius:24px;padding:17px;text-align:center}
+.fitTimer .time{font-size:42px;font-weight:900;letter-spacing:1px;margin:4px 0}
+.fitTimer.resting{background:radial-gradient(circle at 20% 20%,rgba(134,239,172,.22),transparent 32%),rgba(255,255,255,.055)}
+.progress{height:10px;background:rgba(255,255,255,.08);border-radius:999px;overflow:hidden}
+.progress span{display:block;height:100%;width:0%;background:linear-gradient(90deg,#7dd3fc,#c4b5fd);transition:.25s width}
+.logTable{width:100%;border-collapse:separate;border-spacing:0 8px}
+.logTable th{text-align:left;font-size:12px;color:var(--muted);font-weight:500;padding:0 8px}
+.logTable td{background:rgba(255,255,255,.055);border-top:1px solid rgba(255,255,255,.08);border-bottom:1px solid rgba(255,255,255,.08);padding:10px 8px;font-size:13px;text-align:left}
+.logTable td:first-child{border-left:1px solid rgba(255,255,255,.08);border-radius:12px 0 0 12px}
+.logTable td:last-child{border-right:1px solid rgba(255,255,255,.08);border-radius:0 12px 12px 0}
+.empty{color:var(--muted);text-align:center;padding:25px 10px;border:1px dashed rgba(255,255,255,.15);border-radius:18px}
+
+/* Vocab */
+.vnWrap{max-width:900px}
+.vnTop{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+.vnRow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.vnReview{min-height:calc(100vh - 90px);display:flex;align-items:center;justify-content:center}
+.reviewCard{width:min(720px,94vw);background:rgba(31,36,48,.96);border:1px solid var(--line);border-radius:30px;padding:26px;box-shadow:0 28px 70px rgba(0,0,0,.36);text-align:center}
+.reviewTop{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+.question{font-size:44px;font-weight:900;line-height:1.25;word-break:break-word;margin:18px 0 12px}
+.questionNote{min-height:26px;color:#d8bd8a;font-size:15px;line-height:1.5;margin-bottom:12px}
+.answer{max-width:500px;margin:0 auto;text-align:center;font-size:20px;padding:16px}
+.result{min-height:78px;font-size:58px;margin:10px 0 0}
+.ok{color:var(--green)}.bad{color:var(--red)}
+.answerHint{color:var(--muted);min-height:28px;line-height:1.5;font-size:16px}
+.completionBanner{margin:12px auto 8px;max-width:560px;border:1px solid rgba(255,173,102,.55);background:rgba(255,173,102,.12);color:#ffe2c4;border-radius:18px;padding:14px 16px;line-height:1.7;font-weight:800;font-size:17px;box-shadow:0 12px 28px rgba(0,0,0,.18)}
+.wordListBox,.recordBox{max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:18px;background:#121621;margin-top:10px}
+.noteInput{min-width:140px;border-radius:10px;padding:9px 10px;font-size:14px;background:#0d111b}
+.toast{position:fixed;left:50%;bottom:82px;transform:translateX(-50%);background:#e5f9ff;color:#0b1020;border-radius:999px;padding:10px 15px;font-size:14px;font-weight:800;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:.2s;z-index:30}
+.toast.show{opacity:1;bottom:96px}
+
+@media(max-width:900px){.toolGrid,.fitLayout{grid-template-columns:1fr}.statusBar{grid-template-columns:1fr 1fr}.timerBox,.grid3,.grid2,.vnRow{grid-template-columns:1fr}}
+@media(max-width:560px){.progress-ring{width:210px;height:210px}.progress-ring svg{width:210px;height:210px}.timeBig{font-size:38px}.app{padding:16px 12px 60px}.topbar,.vnTop{flex-direction:column}.timerSettings,.todayBox,.timerBtns,.pinBox{grid-template-columns:1fr}.reviewTop{justify-content:center}.reviewCard{padding:20px}.question{font-size:34px}.statusBar{grid-template-columns:1fr}}
+</style>
 </head>
 <body>
-  <main class="app">
-    <h1>計時器 V2.2</h1>
-    <div class="cloud-status"><span id="cloudDot" class="dot"></span><span id="cloudText">雲端連線中...</span></div>
+<div id="toast" class="toast"></div>
 
-    <div class="pin-panel">
-      <div class="pin-title">操作保護</div>
-      <div id="pinStatus" class="pin-status">目前只能查看，要操作請輸入 PIN。</div>
-      <div class="pin-row">
-        <input id="pinInput" type="password" inputmode="numeric" maxlength="8" placeholder="輸入 PIN" autocomplete="off" />
-        <button id="unlockPinBtn" class="unlock">解鎖操作</button>
-        <button id="lockPinBtn" class="lock">鎖定</button>
+<!-- HOME -->
+<section id="homeView" class="homeWrap">
+  <div class="card homeCard">
+    <div class="section">
+      <div class="title">
+        <h1>Yu工具箱 V1.0</h1>
+        <p>第一頁選擇要做什麼：計時器、健身、越南文單字複習工具。密碼只在這裡輸入一次。</p>
       </div>
-      <div id="pinMsg" style="font-size:13px;color:#94a3b8;line-height:1.6;margin-top:10px;"></div>
-    </div>
-
-    <div class="item-panel">
-      <div class="item-title">項目</div>
-      <div class="item-row">
-        <select id="itemType">
-          <option value="學習">學習</option>
-          <option value="健身">健身</option>
-          <option value="custom">自行輸入</option>
-        </select>
-        <input id="customItem" type="text" placeholder="輸入項目名稱" maxlength="12" style="display:none;" />
+      <div id="lockBox">
+        <label>密碼 / PIN</label>
+        <div class="pinBox">
+          <input id="globalPinInput" type="password" inputmode="numeric" placeholder="輸入 PIN" maxlength="8" />
+          <button class="primary" onclick="unlockSuite()">解鎖</button>
+        </div>
+        <div id="globalPinMsg" class="small"></div>
       </div>
-      <div id="itemCurrent" style="font-size:14px;color:#94a3b8;margin-top:10px;">目前項目：學習</div>
-    </div>
-
-    <section id="studySettings" class="settings">
-      <div><label for="targetStudyMinutes">本次目標</label><input id="targetStudyMinutes" type="number" min="1" value="30" /></div>
-      <div><label for="studyMinutes">每次目標</label><input id="studyMinutes" type="number" min="1" value="10" /></div>
-      <div><label for="breakMinutes">每次休息</label><input id="breakMinutes" type="number" min="1" value="5" /></div>
-    </section>
-
-    <section id="fitnessSettings" class="fitness-panel hidden">
-      <div class="panel-title">健身設定</div>
-      <div class="fitness-row">
-        <div>
-          <label for="bodyPartSelect">部位</label>
-          <select id="bodyPartSelect">
-            <option value="背">背</option>
-            <option value="腿">腿</option>
-            <option value="胸">胸</option>
-          </select>
+      <div id="toolMenu" class="hide">
+        <div class="row" style="justify-content:space-between;margin-top:4px">
+          <div class="pill">已解鎖</div>
+          <button class="navBtn ghost" onclick="lockSuite()">鎖定</button>
         </div>
-        <div>
-          <label for="exerciseSelect">動作</label>
-          <select id="exerciseSelect"></select>
+        <div class="toolGrid">
+          <div class="toolCard" onclick="openTool('timer')">
+            <div class="toolIcon">⏱️</div>
+            <div class="toolTitle">計時器</div>
+            <div class="toolDesc">雲端同步學習計時、每日累計、輸出 Excel。</div>
+          </div>
+          <div class="toolCard" onclick="openTool('fitness')">
+            <div class="toolIcon">🏋️</div>
+            <div class="toolTitle">健身</div>
+            <div class="toolDesc">訓練部位、動作、組數、休息時間與歷史紀錄。</div>
+          </div>
+          <div class="toolCard" onclick="openTool('vocab')">
+            <div class="toolIcon">🇻🇳</div>
+            <div class="toolTitle">越南文單字複習</div>
+            <div class="toolDesc">新單字優先複習、錯題循環、每日複習紀錄。</div>
+          </div>
         </div>
-        <div>
-          <label for="fitnessRestInput">休息時間</label>
-          <input id="fitnessRestInput" type="text" inputmode="decimal" value="1" placeholder="例：1 或 1.3" />
-          <div class="hint">例：1=1分鐘｜1.3=1分30秒｜0.3=30秒</div>
+        <div class="small" style="margin-top:16px">
+          資料位置：計時器存在 Firebase 雲端；健身與越南文單字存在目前瀏覽器 localStorage。
         </div>
       </div>
-      <div style="margin-top:12px;">
-        <input id="customExerciseInput" type="text" placeholder="手動輸入動作名稱" maxlength="20" style="display:none;" />
-      </div>
-    </section>
-
-    <section class="today-box">
-      <div class="card"><div class="card-title">今日日期</div><div id="todayDate" class="card-value">----</div></div>
-      <div class="card"><div class="card-title">今日累計時間</div><div id="todayStudyTime" class="card-value">00:00:00</div></div>
-    </section>
-
-    <section class="status"><span id="phaseText" class="phase">尚未開始</span></section>
-
-    <div class="circle-wrap">
-      <div class="progress-ring">
-        <svg viewBox="0 0 240 240" aria-hidden="true">
-          <defs><linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#38bdf8"/><stop offset="100%" stop-color="#818cf8"/></linearGradient></defs>
-          <circle class="circle-bg" cx="120" cy="120" r="100"></circle>
-          <circle id="circleProgress" class="circle-progress" cx="120" cy="120" r="100"></circle>
-        </svg>
-        <div class="circle-inner"><div id="timeDisplay" class="time">10:00</div><div id="percentText" class="percent">0%</div></div>
-      </div>
     </div>
+  </div>
+</section>
 
-    <div id="totalDisplay" class="total">本次已學習 0 分鐘 / 目標 30 分鐘</div>
-
-    <section class="buttons">
-      <button id="startBtn">開始</button>
-      <button id="pauseBtn" disabled>停止</button>
-    </section>
-
-    <div id="fitnessActions" class="fitness-actions hidden">
-      <button id="restToggleBtn">開始休息</button>
-      <button id="finishExerciseBtn">完成此動作</button>
-      <button id="finishSessionBtn">完成本次紀錄</button>
+<!-- TIMER -->
+<section id="timerView" class="app timerApp hide">
+  <div class="topbar">
+    <div class="title"><h1>計時器</h1><p>學習計時器｜雲端同步｜輸出 Excel</p></div>
+    <button class="navBtn ghost" onclick="goHome()">← 回首頁</button>
+  </div>
+  <div class="cloud-status"><span id="timerCloudDot" class="dot"></span><span id="timerCloudText">雲端連線中...</span></div>
+  <section class="card"><div class="section timerSettings">
+    <div><label>本次目標</label><input id="timerTarget" type="number" min="1" value="30"></div>
+    <div><label>每次目標</label><input id="timerStudy" type="number" min="1" value="10"></div>
+    <div><label>每次休息</label><input id="timerBreak" type="number" min="1" value="5"></div>
+  </div></section>
+  <section class="todayBox">
+    <div class="statCard"><div class="k">今日日期</div><div id="timerTodayDate" class="v">----</div></div>
+    <div class="statCard"><div class="k">今日累計時間</div><div id="timerTodayTotal" class="v">00:00:00</div></div>
+  </section>
+  <div class="phase"><span id="timerPhase">尚未開始</span></div>
+  <div class="circle-wrap">
+    <div class="progress-ring">
+      <svg viewBox="0 0 240 240" aria-hidden="true">
+        <defs><linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#38bdf8"/><stop offset="100%" stop-color="#818cf8"/></linearGradient></defs>
+        <circle class="circle-bg" cx="120" cy="120" r="100"></circle>
+        <circle id="timerCircle" class="circle-progress" cx="120" cy="120" r="100"></circle>
+      </svg>
+      <div class="circle-inner"><div id="timerTime" class="timeBig">10:00</div><div id="timerPercent" class="percent">0%</div></div>
     </div>
-
-    <div class="small-buttons">
-      <button id="resetSessionBtn">清除本次紀錄</button>
-      <button id="testSoundBtn">測試提醒音</button>
-      <button id="forceSyncBtn">手動同步</button>
-    </div>
-
-    <section class="records">
-      <h2>紀錄</h2>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>日期</th><th>項目</th><th>累計時間</th><th>詳細</th></tr></thead>
-          <tbody id="recordBody"><tr><td colspan="4">尚無紀錄</td></tr></tbody>
-        </table>
+  </div>
+  <div id="timerTotalText" class="timerTotal">本次已學習 0 分鐘 / 目標 30 分鐘</div>
+  <section class="timerBtns">
+    <button id="timerStartBtn" onclick="timerStartOrResume()">開始</button>
+    <button id="timerPauseBtn" onclick="timerPause()" disabled>停止</button>
+  </section>
+  <div class="small-buttons">
+    <button id="timerResetBtn" onclick="timerResetSession()">清除本次紀錄</button>
+    <button onclick="timerPlayAlarm()">測試提醒音</button>
+    <button onclick="timerRender()">手動同步</button>
+  </div>
+  <section class="records card">
+    <div class="section">
+      <h2 style="text-align:center;margin-bottom:12px">紀錄</h2>
+      <div class="tableWrap">
+        <table><thead><tr><th>日期</th><th>累計時間</th></tr></thead><tbody id="timerRecordBody"><tr><td colspan="2">尚無紀錄</td></tr></tbody></table>
       </div>
       <div class="small-buttons">
-        <button id="clearTodayBtn">清除今日紀錄</button>
-        <button id="clearAllBtn">清除全部紀錄</button>
+        <button onclick="timerClearToday()">清除今日紀錄</button>
+        <button onclick="timerClearAll()">清除全部紀錄</button>
+        <button onclick="timerExportExcel()">輸出 EXCEL</button>
+      </div>
+    </div>
+  </section>
+  <div class="makerFooter">2026/05/01 Yu製作</div>
+</section>
+
+<!-- FITNESS -->
+<section id="fitnessView" class="app hide">
+  <div class="topbar">
+    <div class="title"><h1>健身紀錄工具</h1><p id="fitnessTodayPill">今天</p></div>
+    <button class="navBtn ghost" onclick="goHome()">← 回首頁</button>
+  </div>
+  <div class="fitLayout">
+    <aside class="card">
+      <div class="section" id="fitnessWorkoutSection">
+        <div class="row" style="justify-content:space-between;margin-bottom:12px"><h2>今天練什麼</h2><span class="small">先選部位</span></div>
+        <div class="workoutBtns" id="workoutBtns"></div>
+        <button class="ghost" style="width:100%;margin-top:10px" onclick="openWorkoutEditor()">＋新增訓練部位</button>
+        <hr>
+        <div class="row" style="justify-content:space-between;margin-bottom:12px"><h2>歷史訓練紀錄</h2><button class="navBtn ghost" onclick="fitnessExportCSV()">匯出詳細</button></div>
+        <div class="historyList" id="historyList"></div>
+      </div>
+      <div class="section" id="fitnessExerciseSection">
+        <div class="row" style="justify-content:space-between;margin-bottom:12px"><h2>動作順序</h2><button class="navBtn ghost" onclick="fitnessBackWorkout()">← 重新選部位</button></div>
+        <div class="exerciseList" id="exerciseList"></div>
+        <button class="ghost" id="addExerciseBtn" style="width:100%;margin-top:10px" onclick="openExerciseEditor()">＋新增動作</button>
+      </div>
+    </aside>
+    <main class="main">
+      <section class="card">
+        <div class="section">
+          <div class="row" style="justify-content:space-between;margin-bottom:12px">
+            <button class="navBtn ghost" onclick="fitnessBackExercise()">← 動作順序</button>
+            <span class="small" id="currentWorkoutLabel"></span>
+          </div>
+          <div class="statusBar">
+            <div class="fitStat"><span class="small">本次總時間</span><b id="sessionTime">00:00</b></div>
+            <div class="fitStat"><span class="small">動作時間</span><b id="moveTotal">00:00</b></div>
+            <div class="fitStat"><span class="small">休息時間</span><b id="restTotal">00:00</b></div>
+            <div class="fitStat"><span class="small">已完成組數</span><b id="setTotal">0</b></div>
+          </div>
+          <div class="progress"><span id="progressFill"></span></div>
+          <div style="margin-top:16px">
+            <h2 id="currentName">請先選擇訓練部位</h2>
+            <div class="plan" id="currentPlan">選好後，這裡會顯示目前動作的重量/次數、組數與休息時間。</div>
+            <div class="note" id="currentNote"></div>
+            <div class="pill" id="setBadge" style="margin-top:10px">尚未開始</div>
+          </div>
+          <div class="timerBox">
+            <div class="fitTimer"><div class="small">本組動作時間</div><div class="time" id="moveTimer">00:00</div><div class="small">按「開始本組」後開始計算</div></div>
+            <div class="fitTimer resting"><div class="small">休息時間</div><div class="time" id="restTimer">00:00</div><div class="small" id="restTargetText">休息目標：--</div></div>
+          </div>
+          <div class="grid2" style="margin-top:14px">
+            <input id="actualInput" placeholder="本組實做，例如：60kg × 8，可不填">
+            <input id="setNoteInput" placeholder="本組備註，例如：太重、PR、姿勢不穩">
+          </div>
+          <div class="row" style="margin-top:12px">
+            <button class="ghost" onclick="setRestTarget(60)">休 1:00</button>
+            <button class="ghost" onclick="setRestTarget(90)">休 1:30</button>
+            <button class="ghost" onclick="setRestTarget(120)">休 2:00</button>
+            <button class="ghost" onclick="adjustRestTarget(30)">+30秒</button>
+            <button class="ghost" onclick="adjustRestTarget(-30)">-30秒</button>
+          </div>
+          <div class="grid2" style="margin-top:14px">
+            <button class="primary" id="startMoveBtn" onclick="startMove()">開始本組動作</button>
+            <button class="good" id="finishMoveBtn" onclick="finishMove()">完成動作 → 開始休息</button>
+            <button class="warn" id="finishRestBtn" onclick="finishRest()">休息結束 → 下一組</button>
+            <button class="ghost" id="skipRestBtn" onclick="skipRest()">不休息，下一組</button>
+          </div>
+          <div class="row" style="margin-top:12px">
+            <button class="good" onclick="completeExercise()">完成此動作</button>
+            <button class="primary" onclick="saveSession()">儲存本次訓練</button>
+            <button class="danger" onclick="resetCurrentSession()">清空本次</button>
+          </div>
+        </div>
+      </section>
+      <section class="card"><div class="section">
+        <h2>本次明細</h2>
+        <div id="logBox"></div>
+      </div></section>
+    </main>
+  </div>
+  <div class="makerFooter">2026/05/06 Yu製作</div>
+</section>
+
+<!-- VOCAB -->
+<section id="vocabView" class="app vnWrap hide">
+  <div class="vnTop">
+    <div class="title"><h1>越南文單字複習</h1><p>新單字優先複習｜錯題循環｜每日複習紀錄</p></div>
+    <button class="navBtn ghost" onclick="goHome()">← 回首頁</button>
+  </div>
+  <div id="vocabSetup">
+    <section class="card">
+      <div class="section row" style="justify-content:space-between">
+        <div><h2>開始複習</h2><div class="small">新單字會先拿出來考；新單字都答對後，才會混入舊字複習。</div></div>
+        <button class="primary" onclick="vnStartReview()">開始複習</button>
       </div>
     </section>
+    <section class="card">
+      <div class="section">
+        <h2>新增單字</h2>
+        <div class="vnRow">
+          <div><label>越南文</label><input id="vnViInput" placeholder="例如：Không biết"></div>
+          <div><label>中文意思</label><input id="vnZhInput" placeholder="例如：不知道"></div>
+          <div><label>備註</label><input id="vnNoteInput" placeholder="例如：không = 不"></div>
+        </div>
+        <button onclick="vnAddOne()">新增單字</button>
+        <button class="ghost" onclick="vnFillDemo()">加入示範</button>
+        <hr>
+        <label>批量貼上，一行一組：越南文 中文意思</label>
+        <textarea id="vnBulkInput" placeholder="Không biết 不知道&#10;Tôi không hiểu 我不懂&#10;Cái này bao nhiêu tiền 這個多少錢"></textarea>
+        <button onclick="vnAddBulk()">批量新增</button>
+        <button class="ghost" onclick="vnExportWords()">匯出備份</button>
+        <button class="danger" onclick="vnClearWords()">清空單字</button>
+        <div class="small">可用「/」設定多個正確答案。答案判斷會忽略大小寫、空格、標點符號；備註會在答題後才顯示。</div>
+        <hr>
+        <h2>已新增單字 <span class="pill">單字數：<b id="vnTotalCount">0</b></span></h2>
+        <div id="vnWordList" class="wordListBox"></div>
+        <hr>
+        <h2>每日複習紀錄</h2>
+        <div id="vnDailyRecord" class="recordBox"></div>
+        <div id="vnTodayHint" class="small"></div>
+      </div>
+    </section>
+  </div>
+  <div id="vocabReview" class="vnReview hide">
+    <section class="reviewCard">
+      <div class="reviewTop">
+        <button class="ghost" onclick="vnBackSetup()">返回新增單字</button>
+        <select id="vnModeSelect" onchange="vnResetSessionAndNext()">
+          <option value="viToZh">越南文 → 中文</option>
+          <option value="zhToVi">中文 → 越南文</option>
+        </select>
+        <label class="pill"><input id="vnAutoSpeak" type="checkbox" onchange="vnSaveAutoSpeak()" style="width:auto"> 自動發音</label>
+      </div>
+      <div class="small" id="vnQuizHint">請輸入中文意思</div>
+      <div class="small" id="vnRoundHint">第 1 輪｜剩餘 0 題</div>
+      <div id="vnCompletion" class="completionBanner hide"></div>
+      <div class="question" id="vnQuestion">—</div>
+      <div class="questionNote" id="vnQuestionNote"></div>
+      <input id="vnAnswerInput" class="answer" placeholder="輸入答案後按 Enter" onkeydown="if(event.key==='Enter')vnCheckAnswer()">
+      <div class="row" style="justify-content:center;margin-top:8px">
+        <button onclick="vnCheckAnswer()">確認答案</button>
+        <button class="ghost" onclick="vnNextQuestion()">下一題</button>
+        <button class="ghost" onclick="vnSpeakQuestion()">🔊 發音</button>
+      </div>
+      <div id="vnVoiceStatus" class="small"></div>
+      <div id="vnResult" class="result"></div>
+      <div id="vnAnswerHint" class="answerHint"></div>
+    </section>
+  </div>
+  <div class="makerFooter">2026/05/06 Yu製作</div>
+</section>
 
-    <div class="footer">2026/05/01 Yu製作</div>
-  </main>
+<script>
+/* ===== Shared ===== */
+const SUITE_PIN="0825";
+function $(id){return document.getElementById(id)}
+function toast(msg){const el=$("toast"); el.textContent=msg; el.classList.add("show"); setTimeout(()=>el.classList.remove("show"),1600)}
+function isUnlocked(){return sessionStorage.getItem("yu_suite_unlocked")==="1"}
+function unlockSuite(){const v=$("globalPinInput").value; if(v===SUITE_PIN){sessionStorage.setItem("yu_suite_unlocked","1");$("globalPinInput").value="";renderHome()}else{$("globalPinMsg").textContent="PIN 錯誤，請再試一次。";$("globalPinInput").select()}}
+function lockSuite(){sessionStorage.removeItem("yu_suite_unlocked");renderHome()}
+function renderHome(){const ok=isUnlocked();$("lockBox").classList.toggle("hide",ok);$("toolMenu").classList.toggle("hide",!ok)}
+function guard(){if(!isUnlocked()){goHome();return false}return true}
+function showOnly(id){["homeView","timerView","fitnessView","vocabView"].forEach(x=>$(x).classList.add("hide"));$(id).classList.remove("hide");window.scrollTo(0,0)}
+function openTool(name){if(!guard())return;if(name==="timer"){showOnly("timerView");timerRender()}if(name==="fitness"){showOnly("fitnessView");fitInitOnce();renderFitnessAll()}if(name==="vocab"){showOnly("vocabView");vnRender()}}
+function goHome(){showOnly("homeView");renderHome()}
+function pad(n){return String(n).padStart(2,"0")}
+function fmt(sec){sec=Math.max(0,Math.floor(sec||0));let m=Math.floor(sec/60),s=sec%60;return `${pad(m)}:${pad(s)}`}
+function fmtLong(sec){sec=Math.max(0,Math.floor(sec||0));let h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=sec%60;return `${pad(h)}:${pad(m)}:${pad(s)}`}
+function fmtRead(sec){sec=Math.max(0,Math.floor(sec||0));let h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=sec%60;if(h>0)return `${h} 小時 ${m} 分 ${s} 秒`;if(m>0)return `${m} 分 ${s} 秒`;return `${s} 秒`}
+function todayText(){const d=new Date();return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`}
+function nowISO(){return new Date().toISOString().slice(0,19).replace("T"," ")}
+function csvDownload(filename, rows){const esc=v=>`"${String(v??"").replace(/"/g,'""')}"`;const csv="\ufeff"+rows.map(r=>r.map(esc).join(",")).join("\n");const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url)}
+function xlsxOrCsv(filename, sheets){if(window.XLSX){const wb=XLSX.utils.book_new();sheets.forEach(s=>XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(s.rows),s.name));XLSX.writeFile(wb,filename)}else{const s=sheets[0];const keys=Object.keys(s.rows[0]||{});csvDownload(filename.replace(/\.xlsx$/,".csv"),[keys,...s.rows.map(r=>keys.map(k=>r[k]))]);alert("Excel 元件載入失敗，已改輸出 CSV。")}}
 
-  <script>
-    const firebaseConfig={
-      apiKey:"AIzaSyCcrSu0qfRdC8q7h_ID6se7Y6pZzhSRs9Q",
-      authDomain:"study-timer-feddf.firebaseapp.com",
-      databaseURL:"https://study-timer-feddf-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId:"study-timer-feddf",
-      storageBucket:"study-timer-feddf.firebasestorage.app",
-      messagingSenderId:"291292242112",
-      appId:"1:291292242112:web:af000b67dbde713a424d25",
-      measurementId:"G-R0WENMYKFY"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db=firebase.database();
-    const urlParams=new URLSearchParams(window.location.search);
-    const ROOM_ID=urlParams.get("room")||"main";
-    const roomRef=db.ref(`studyTimerRooms/${ROOM_ID}`);
+/* ===== TIMER ===== */
+const firebaseConfig={apiKey:"AIzaSyCcrSu0qfRdC8q7h_ID6se7Y6pZzhSRs9Q",authDomain:"study-timer-feddf.firebaseapp.com",databaseURL:"https://study-timer-feddf-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"study-timer-feddf",storageBucket:"study-timer-feddf.firebasestorage.app",messagingSenderId:"291292242112",appId:"1:291292242112:web:af000b67dbde713a424d25",measurementId:"G-R0WENMYKFY"};
+firebase.initializeApp(firebaseConfig);
+const db=firebase.database();
+const roomRef=db.ref("studyTimerRooms/main");
+let timerData=null,timerOffset=0,timerAudio=null,timerWrite=null;
+const CIRC=2*Math.PI*100;
+$("timerCircle").style.strokeDasharray=CIRC;
+function timerDefault(){return{version:"suite-v1-timer",settings:{targetStudyMinutes:30,studyMinutes:10,breakMinutes:5},state:{status:"idle",currentPhase:"study",startedAt:null,baseElapsedSeconds:0,baseCompletedStudySeconds:0,remainingPhaseSeconds:600,dayBaseDate:"",dayBaseSeconds:0,updatedAt:0,updatedBy:""},records:{}}}
+function timerNow(){return Date.now()+timerOffset}
+function timerToday(ts=timerNow()){const d=new Date(ts);return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`}
+function timerSettings(d=timerData){let s=d?.settings||timerDefault().settings;return{targetStudyMinutes:Math.max(1,parseInt(s.targetStudyMinutes||30,10)),studyMinutes:Math.max(1,parseInt(s.studyMinutes||10,10)),breakMinutes:Math.max(1,parseInt(s.breakMinutes||5,10))}}
+function timerState(d=timerData){return d?.state||d?.learningState||timerDefault().state}
+function timerCompute(d=timerData,t=timerNow()){if(!d)d=timerDefault();let s=timerSettings(d),st=timerState(d),status=st.status||"idle",target=s.targetStudyMinutes*60,study=s.studyMinutes*60,br=s.breakMinutes*60,elapsed=Math.max(0,st.baseElapsedSeconds||0);if(status==="running"&&st.startedAt)elapsed+=Math.max(0,Math.floor((t-st.startedAt)/1000));if(status==="idle")return{status,effectiveElapsed:0,completedStudy:0,target,currentPhase:"study",remainingPhase:Math.min(study,target),finished:false,percent:0};if(status==="paused"){let c=Math.min(target,st.baseCompletedStudySeconds||0);return{status,effectiveElapsed:elapsed,completedStudy:c,target,currentPhase:st.currentPhase||"study",remainingPhase:Math.max(0,st.remainingPhaseSeconds||0),finished:false,percent:target?Math.min(100,c/target*100):0}}if(status==="finished")return{status,effectiveElapsed:elapsed,completedStudy:target,target,currentPhase:"study",remainingPhase:0,finished:true,percent:100};let rem=elapsed,completed=0,phase="study",remaining=Math.min(study,target),finished=false;while(true){let sr=Math.min(study,target-completed);if(rem<sr){phase="study";completed+=rem;remaining=sr-rem;break}rem-=sr;completed+=sr;if(completed>=target){phase="study";remaining=0;finished=true;break}if(rem<br){phase="break";remaining=br-rem;break}rem-=br}completed=Math.min(target,Math.max(0,Math.floor(completed)));return{status,effectiveElapsed:elapsed,completedStudy:completed,target,currentPhase:phase,remainingPhase:Math.max(0,Math.ceil(remaining)),finished,percent:target?Math.min(100,completed/target*100):0}}
+function timerTodayTotal(d=timerData){if(!d)return 0;let today=timerToday(),base=(d.records||{})[today]||0,st=timerState(d),c=timerCompute(d);if(["running","paused","finished"].includes(st.status)&&st.dayBaseDate===today)return Math.max(base,(st.dayBaseSeconds||0)+c.completedStudy);return base}
+function timerRender(){if(!timerData)return;let s=timerSettings(timerData),st=timerState(timerData),c=timerCompute(timerData),status=st.status||"idle";$("timerTarget").value=s.targetStudyMinutes;$("timerStudy").value=s.studyMinutes;$("timerBreak").value=s.breakMinutes;$("timerTodayDate").textContent=timerToday();$("timerTodayTotal").textContent=fmtLong(timerTodayTotal(timerData));$("timerTime").textContent=fmt(c.remainingPhase);$("timerPercent").textContent=`${Math.round(c.percent)}%`;$("timerCircle").style.strokeDashoffset=CIRC*(1-c.percent/100);$("timerTotalText").textContent=`本次已學習 ${Math.floor(c.completedStudy/60)} 分鐘 / 目標 ${Math.floor(c.target/60)} 分鐘`;const phase=$("timerPhase");if(status==="idle"){phase.textContent="尚未開始";$("timerStartBtn").textContent="開始";$("timerStartBtn").disabled=false;$("timerPauseBtn").disabled=true;timerLockInputs(false)}else if(status==="running"){phase.textContent=c.currentPhase==="study"?"學習中":"休息中";$("timerStartBtn").disabled=true;$("timerPauseBtn").disabled=false;timerLockInputs(true)}else if(status==="paused"){phase.textContent=`已暫停：${c.currentPhase==="study"?"學習中":"休息中"}`;$("timerStartBtn").textContent="繼續";$("timerStartBtn").disabled=false;$("timerPauseBtn").disabled=true;timerLockInputs(true)}else{phase.textContent="完成！";$("timerStartBtn").textContent="重新開始";$("timerStartBtn").disabled=false;$("timerPauseBtn").disabled=true;timerLockInputs(false)}timerRenderRecords();if(status==="running"&&c.finished)timerFinish(false)}
+function timerLockInputs(lock){["timerTarget","timerStudy","timerBreak"].forEach(id=>$(id).disabled=lock)}
+function timerRenderRecords(){let r=timerData?.records||{},keys=Object.keys(r).sort().reverse();$("timerRecordBody").innerHTML=keys.length?keys.map(k=>`<tr><td>${k}</td><td>${fmtRead(r[k]||0)}</td></tr>`).join(""):'<tr><td colspan="2">尚無紀錄</td></tr>'}
+function timerRecordUpdates(d,c){let st=timerState(d),day=st.dayBaseDate||timerToday(),base=st.dayBaseSeconds||0,u={};u[`records/${day}`]=base+(c.completedStudy||0);return u}
+function timerInputNum(id,fb){let v=parseInt($(id).value,10);return Number.isFinite(v)&&v>0?v:fb}
+function timerWriteSettings(){clearTimeout(timerWrite);timerWrite=setTimeout(async()=>{if(!timerData)return;let st=timerState(timerData);if(st.status==="running"||st.status==="paused")return;let set={targetStudyMinutes:timerInputNum("timerTarget",30),studyMinutes:timerInputNum("timerStudy",10),breakMinutes:timerInputNum("timerBreak",5)},target=set.targetStudyMinutes*60,study=set.studyMinutes*60;await roomRef.update({settings:set,"state/currentPhase":"study","state/baseElapsedSeconds":0,"state/baseCompletedStudySeconds":0,"state/remainingPhaseSeconds":Math.min(study,target),"state/updatedAt":firebase.database.ServerValue.TIMESTAMP})},350)}
+["timerTarget","timerStudy","timerBreak"].forEach(id=>$(id).addEventListener("input",timerWriteSettings));
+async function timerStartOrResume(){let snap=await roomRef.once("value"),d=snap.val()||timerDefault(),st=timerState(d),s=timerSettings(d),status=st.status||"idle",now=timerNow(),u={};if(status==="running")return;if(status==="idle"||status==="finished"){let set={targetStudyMinutes:timerInputNum("timerTarget",s.targetStudyMinutes),studyMinutes:timerInputNum("timerStudy",s.studyMinutes),breakMinutes:timerInputNum("timerBreak",s.breakMinutes)},target=set.targetStudyMinutes*60,study=set.studyMinutes*60,today=timerToday(),base=(d.records||{})[today]||0;u={settings:set,"state/status":"running","state/currentPhase":"study","state/startedAt":now,"state/baseElapsedSeconds":0,"state/baseCompletedStudySeconds":0,"state/remainingPhaseSeconds":Math.min(study,target),"state/dayBaseDate":today,"state/dayBaseSeconds":base,"state/updatedAt":firebase.database.ServerValue.TIMESTAMP}}else{let c=timerCompute(d,now);u={"state/status":"running","state/currentPhase":c.currentPhase,"state/startedAt":now,"state/baseElapsedSeconds":c.effectiveElapsed,"state/baseCompletedStudySeconds":c.completedStudy,"state/remainingPhaseSeconds":c.remainingPhase,"state/updatedAt":firebase.database.ServerValue.TIMESTAMP}}await roomRef.update(u)}
+async function timerPause(){let snap=await roomRef.once("value"),d=snap.val();if(!d||timerState(d).status!=="running")return;let c=timerCompute(d),u=timerRecordUpdates(d,c);Object.assign(u,{"state/status":"paused","state/currentPhase":c.currentPhase,"state/startedAt":null,"state/baseElapsedSeconds":c.effectiveElapsed,"state/baseCompletedStudySeconds":c.completedStudy,"state/remainingPhaseSeconds":c.remainingPhase,"state/updatedAt":firebase.database.ServerValue.TIMESTAMP});await roomRef.update(u)}
+async function timerResetSession(){let snap=await roomRef.once("value"),d=snap.val()||timerDefault(),s=timerSettings(d),st=timerState(d),target=s.targetStudyMinutes*60,study=s.studyMinutes*60,u={};if(st.dayBaseDate)u[`records/${st.dayBaseDate}`]=(st.dayBaseSeconds||0)>0?(st.dayBaseSeconds||0):null;Object.assign(u,{"state/status":"idle","state/currentPhase":"study","state/startedAt":null,"state/baseElapsedSeconds":0,"state/baseCompletedStudySeconds":0,"state/remainingPhaseSeconds":Math.min(study,target),"state/dayBaseDate":"","state/dayBaseSeconds":0,"state/updatedAt":firebase.database.ServerValue.TIMESTAMP});await roomRef.update(u)}
+async function timerFinish(showAlert=true){let snap=await roomRef.once("value"),d=snap.val();if(!d||timerState(d).status==="finished")return;let c=timerCompute(d),u=timerRecordUpdates(d,c);Object.assign(u,{"state/status":"finished","state/currentPhase":"study","state/startedAt":null,"state/baseElapsedSeconds":c.effectiveElapsed,"state/baseCompletedStudySeconds":c.target,"state/remainingPhaseSeconds":0,"state/updatedAt":firebase.database.ServerValue.TIMESTAMP});await roomRef.update(u);timerPlayAlarm();if(showAlert)alert("本次目標完成！")}
+async function timerClearToday(){if(!confirm("確定要清除今日紀錄嗎？"))return;let t=timerToday();await roomRef.update({[`records/${t}`]:null,"state/dayBaseDate":"","state/dayBaseSeconds":0})}
+async function timerClearAll(){if(!confirm("確定要清除全部紀錄嗎？"))return;await roomRef.update({records:{},recordItems:{},fitnessRecords:{}})}
+function timerExportExcel(){let r=timerData?.records||{},rows=Object.keys(r).sort().map(date=>({"日期":date,"累計秒數":r[date]||0,"累計時間":fmtRead(r[date]||0)}));if(!rows.length)rows=[{"日期":"","累計秒數":"","累計時間":""}];xlsxOrCsv(`計時器紀錄_${timerToday().replaceAll("-","")}.xlsx`,[{name:"紀錄",rows}])}
+function timerPlayAlarm(){try{if(!timerAudio){const AC=window.AudioContext||window.webkitAudioContext;timerAudio=new AC()}let ctx=timerAudio;if(ctx.state==="suspended")ctx.resume();[784,988,1175,1568].forEach((f,i)=>{let t=ctx.currentTime+i*.22,osc=ctx.createOscillator(),g=ctx.createGain();osc.frequency.value=f;g.gain.setValueAtTime(.001,t);g.gain.exponentialRampToValueAtTime(.12,t+.02);g.gain.exponentialRampToValueAtTime(.001,t+.18);osc.connect(g);g.connect(ctx.destination);osc.start(t);osc.stop(t+.22)})}catch(e){}}
+db.ref(".info/serverTimeOffset").on("value",s=>timerOffset=s.val()||0);
+db.ref(".info/connected").on("value",s=>{let ok=!!s.val();$("timerCloudDot").className=ok?"dot online":"dot offline";$("timerCloudText").textContent=ok?"雲端已連線｜房間：main":"雲端未連線"});
+roomRef.on("value",s=>{timerData=s.val()||timerDefault();timerRender()},err=>{$("timerCloudDot").className="dot offline";$("timerCloudText").textContent="Firebase 讀取失敗，請檢查規則";console.error(err)});
+roomRef.once("value").then(s=>{if(!s.exists()){let d=timerDefault();d.state.updatedAt=firebase.database.ServerValue.TIMESTAMP;roomRef.set(d)}});
 
-    const CONTROL_PIN="0825";
-    const CLIENT_ID=Math.random().toString(36).slice(2)+Date.now().toString(36);
-    const CIRCUMFERENCE=2*Math.PI*100;
+/* ===== FITNESS ===== */
+const LS_WORKOUTS="yu_fitness_workouts_v1",LS_HISTORY="yu_fitness_history_v1",LS_CURRENT="yu_fitness_current_v1";
+const DEFAULT_WORKOUTS=[
+  {id:"back",label:"背",exercises:[{name:"槓鈴划船",plan:"4組 × 8-12",rest:90},{name:"機械下拉",plan:"4組 × 8-12",rest:90},{name:"啞鈴側飛鳥",plan:"3組 × 12",rest:60},{name:"啞鈴二頭彎舉",plan:"3組 × 10-12",rest:60}]},
+  {id:"leg",label:"腿",exercises:[{name:"深蹲",plan:"4組 × 6-10",rest:120},{name:"機械抬腿",plan:"4組 × 10-12",rest:90},{name:"機械勾腿",plan:"4組 × 10-12",rest:90},{name:"機械分腿",plan:"3組 × 12",rest:60},{name:"機械夾腿",plan:"3組 × 12",rest:60},{name:"啞鈴分腿蹲",plan:"3組 × 10",rest:90},{name:"硬舉",plan:"3組 × 6-8",rest:120},{name:"懸垂抬腿",plan:"3組",rest:60},{name:"下腹平板支撐",plan:"3組",rest:60}]},
+  {id:"chest",label:"胸",exercises:[{name:"槓鈴臥推",plan:"4組 × 6-10",rest:120},{name:"啞鈴上胸推舉",plan:"4組 × 8-12",rest:90},{name:"滑輪夾胸",plan:"3組 × 12",rest:60},{name:"機械夾胸",plan:"3組 × 12",rest:60},{name:"啞鈴過頭三頭",plan:"3組 × 10-12",rest:60},{name:"啞鈴肩推",plan:"3組 × 8-12",rest:90}]}];
+let WORKOUTS=[],fitState={screen:"workout",workoutId:null,exerciseIndex:0,currentSet:1,restTargetSec:60,status:"idle",sessionStart:null,moveStart:null,restStart:null,restAlerted:false,pendingLog:null,logs:[],completedExercises:{}},fitTick=null,fitInited=false;
+function fitInitOnce(){if(fitInited)return;fitInited=true;loadWorkouts();loadCurrent();renderWorkoutButtons();renderFitnessAll();fitTick=setInterval(fitTickRender,250)}
+function loadWorkouts(){try{WORKOUTS=JSON.parse(localStorage.getItem(LS_WORKOUTS)||"null")||JSON.parse(JSON.stringify(DEFAULT_WORKOUTS))}catch(e){WORKOUTS=JSON.parse(JSON.stringify(DEFAULT_WORKOUTS))}}
+function saveWorkouts(){localStorage.setItem(LS_WORKOUTS,JSON.stringify(WORKOUTS))}
+function getHistory(){try{return JSON.parse(localStorage.getItem(LS_HISTORY)||"[]")}catch(e){return[]}}
+function saveHistory(h){localStorage.setItem(LS_HISTORY,JSON.stringify(h.slice(0,100)))}
+function saveCurrent(){localStorage.setItem(LS_CURRENT,JSON.stringify(fitState))}
+function loadCurrent(){try{let raw=localStorage.getItem(LS_CURRENT);if(raw)fitState=JSON.parse(raw)}catch(e){}}
+function getWorkout(){return WORKOUTS.find(w=>w.id===fitState.workoutId)}
+function getExercise(){let w=getWorkout();return w?w.exercises[fitState.exerciseIndex]:null}
+function selectWorkout(id){fitState.workoutId=id;fitState.exerciseIndex=0;fitState.currentSet=1;fitState.status="idle";fitState.sessionStart=fitState.sessionStart||nowISO();fitState.restTargetSec=getExercise()?.rest||60;saveCurrent();renderFitnessAll()}
+function selectExercise(i){fitState.exerciseIndex=i;fitState.currentSet=1;fitState.status="idle";fitState.restTargetSec=getExercise()?.rest||60;saveCurrent();renderFitnessAll()}
+function renderWorkoutButtons(){let wrap=$("workoutBtns");if(!wrap)return;wrap.innerHTML=WORKOUTS.map(w=>`<div class="workoutCard ${fitState.workoutId===w.id?"active":""}" onclick="selectWorkout('${w.id}')"><b>${w.label}</b><span class="tag">${w.exercises.length} 動作</span></div>`).join("")}
+function renderExerciseList(){let wrap=$("exerciseList"),w=getWorkout();if(!w){wrap.innerHTML='<div class="empty">請先選擇訓練部位</div>';return}wrap.innerHTML=w.exercises.map((ex,i)=>`<div class="exercise ${i===fitState.exerciseIndex?"active":""} ${fitState.completedExercises[ex.name]?"done":""}" onclick="selectExercise(${i})"><div class="exerciseTop"><span class="exerciseName">${i+1}. ${ex.name}</span><span class="tag">${ex.rest||60}秒</span></div><div class="plan">${ex.plan||""}</div></div>`).join("")}
+function renderHistory(){let box=$("historyList"),h=getHistory();box.innerHTML=h.length?h.slice(0,12).map(s=>`<div class="historyItem"><b>${s.date}｜${s.workout}</b><div class="small">${fmtRead(s.totalSec||0)}｜${(s.logs||[]).length} 組</div></div>`).join(""):'<div class="empty">尚無歷史紀錄</div>'}
+function renderFitnessAll(){renderWorkoutButtons();renderExerciseList();renderHistory();fitTickRender()}
+function fitSessionSec(){return fitState.sessionStart?Math.max(0,Math.round((new Date()-new Date(fitState.sessionStart))/1000)):0}
+function sumMove(){return fitState.logs.reduce((a,b)=>a+(b.moveSec||0),0)+(fitState.status==="moving"?Math.round((new Date()-new Date(fitState.moveStart))/1000):0)}
+function sumRest(){return fitState.logs.reduce((a,b)=>a+(b.restSec||0),0)+(fitState.status==="resting"?Math.round((new Date()-new Date(fitState.restStart))/1000):0)}
+function fitTickRender(){if($("fitnessView").classList.contains("hide"))return;let w=getWorkout(),ex=getExercise();$("fitnessTodayPill").textContent="今天 "+todayText();$("currentWorkoutLabel").textContent=w?w.label:"尚未選擇";$("currentName").textContent=ex?ex.name:"請先選擇訓練部位";$("currentPlan").textContent=ex?(ex.plan||""):"選好後，這裡會顯示目前動作的重量/次數、組數與休息時間。";$("currentNote").textContent=ex?.note||"";$("sessionTime").textContent=fmt(fitSessionSec());$("moveTotal").textContent=fmt(sumMove());$("restTotal").textContent=fmt(sumRest());$("setTotal").textContent=fitState.logs.length;$("setBadge").textContent=ex?`第 ${fitState.currentSet} 組`:"尚未開始";$("restTargetText").textContent="休息目標："+fmt(fitState.restTargetSec);let moveSec=fitState.status==="moving"?Math.round((new Date()-new Date(fitState.moveStart))/1000):0;let restSec=fitState.status==="resting"?Math.round((new Date()-new Date(fitState.restStart))/1000):0;$("moveTimer").textContent=fmt(moveSec);$("restTimer").textContent=fmt(restSec);$("progressFill").style.width=w?Math.min(100,(Object.keys(fitState.completedExercises||{}).length/(w.exercises.length||1))*100)+"%":"0%";renderLogs()}
+function renderLogs(){let box=$("logBox");if(!fitState.logs.length){box.innerHTML='<div class="empty">本次尚無明細</div>';return}let rows=fitState.logs.map(l=>`<tr><td>${l.exercise}</td><td>${l.set}</td><td>${l.actual||""}</td><td>${fmt(l.moveSec)}</td><td>${fmt(l.restSec||0)}</td><td>${l.note||""}</td></tr>`).join("");box.innerHTML=`<table class="logTable"><thead><tr><th>動作</th><th>組</th><th>實做</th><th>動作</th><th>休息</th><th>備註</th></tr></thead><tbody>${rows}</tbody></table>`}
+function startMove(){let ex=getExercise();if(!ex){alert("請先選擇動作");return}if(!fitState.sessionStart)fitState.sessionStart=nowISO();fitState.status="moving";fitState.moveStart=new Date().toISOString();fitState.pendingLog=null;saveCurrent();fitTickRender()}
+function finishMove(){if(fitState.status!=="moving"){alert("請先開始本組動作");return}let ex=getExercise(),now=new Date(),moveSec=Math.max(1,Math.round((now-new Date(fitState.moveStart))/1000));fitState.pendingLog={exercise:ex.name,set:fitState.currentSet,planned:ex.plan||"",actual:$("actualInput").value.trim(),note:$("setNoteInput").value.trim(),moveSec,restSec:0,restTargetSec:fitState.restTargetSec,startedAt:fitState.moveStart,endedAt:now.toISOString(),restStartedAt:"",restEndedAt:""};fitState.status="resting";fitState.restStart=now.toISOString();fitState.restAlerted=false;saveCurrent();fitTickRender()}
+function finishRest(){if(fitState.status!=="resting"||!fitState.pendingLog){alert("目前沒有休息中的組數");return}let now=new Date(),restSec=Math.max(0,Math.round((now-new Date(fitState.restStart))/1000));let log={...fitState.pendingLog,restSec,restStartedAt:fitState.restStart,restEndedAt:now.toISOString()};fitState.logs.push(log);fitState.currentSet++;fitState.pendingLog=null;fitState.status="idle";$("actualInput").value="";$("setNoteInput").value="";saveCurrent();renderFitnessAll()}
+function skipRest(){if(fitState.status==="resting")finishRest();else if(fitState.pendingLog){fitState.logs.push(fitState.pendingLog);fitState.currentSet++;fitState.pendingLog=null;fitState.status="idle";saveCurrent();renderFitnessAll()}}
+function completeExercise(){let ex=getExercise();if(!ex)return;if(fitState.status==="resting")finishRest();fitState.completedExercises[ex.name]=true;saveCurrent();renderFitnessAll();toast("此動作已完成")}
+function setRestTarget(s){fitState.restTargetSec=s;saveCurrent();fitTickRender()}
+function adjustRestTarget(delta){fitState.restTargetSec=Math.max(15,(fitState.restTargetSec||60)+delta);saveCurrent();fitTickRender()}
+function saveSession(){let w=getWorkout();if(!w||!fitState.logs.length){alert("目前沒有可儲存的訓練紀錄");return}let started=fitState.sessionStart||nowISO(),ended=nowISO();let session={id:"fit_"+Date.now(),date:todayText(),workout:w.label,startedAt:started,endedAt:ended,totalSec:Math.round((new Date(ended)-new Date(started))/1000),logs:fitState.logs};let h=getHistory();h.unshift(session);saveHistory(h);resetCurrentSession(false);toast("訓練已儲存");renderFitnessAll()}
+function resetCurrentSession(confirmIt=true){if(confirmIt&&!confirm("確定清空本次訓練紀錄？歷史紀錄不會刪除。"))return;localStorage.removeItem(LS_CURRENT);fitState={screen:"workout",workoutId:null,exerciseIndex:0,currentSet:1,restTargetSec:60,status:"idle",sessionStart:null,moveStart:null,restStart:null,restAlerted:false,pendingLog:null,logs:[],completedExercises:{}};saveCurrent();renderFitnessAll()}
+function fitnessBackWorkout(){fitState.workoutId=null;saveCurrent();renderFitnessAll()}
+function fitnessBackExercise(){renderExerciseList();toast("請選擇動作")}
+function openWorkoutEditor(){let name=prompt("輸入新的訓練部位名稱");if(!name)return;WORKOUTS.push({id:"w"+Date.now(),label:name,exercises:[]});saveWorkouts();renderFitnessAll()}
+function openExerciseEditor(){let w=getWorkout();if(!w){alert("請先選部位");return}let name=prompt("動作名稱");if(!name)return;let plan=prompt("計畫重量/次數，可空白","");let rest=parseInt(prompt("休息秒數","60"),10)||60;w.exercises.push({name,plan,rest});saveWorkouts();renderFitnessAll()}
+function fitnessExportCSV(){let rows=[["紀錄ID","日期","訓練部位","訓練開始","訓練結束","總秒數","總時間","動作","組數","計畫重量/次數","實做","動作秒數","動作時間","休息秒數","休息時間","休息目標秒數","休息目標","備註"]];getHistory().forEach(s=>(s.logs||[]).forEach(l=>rows.push([s.id,s.date,s.workout,s.startedAt,s.endedAt,s.totalSec,fmtRead(s.totalSec),l.exercise,l.set,l.planned,l.actual,l.moveSec,fmtRead(l.moveSec),l.restSec,fmtRead(l.restSec),l.restTargetSec,fmt(l.restTargetSec),l.note])));csvDownload(`健身紀錄_${todayText().replaceAll("-","")}.csv`,rows)}
 
-    const exerciseMap={
-      "背":["槓鈴划船","機械下拉","啞鈴側飛鳥","啞鈴二頭彎舉","自行輸入"],
-      "腿":["深蹲","機械抬腿","機械勾腿","機械分腿","機械夾腿","啞鈴分腿蹲","硬舉","懸垂抬腿","下腹平板支撐","自行輸入"],
-      "胸":["槓鈴臥推","啞鈴上胸推舉","滑輪夾胸","機械夾胸","啞鈴過頭三頭","啞鈴肩推","自行輸入"]
-    };
+/* ===== VOCAB ===== */
+const VN_WORDS="yu_vn_words_v1",VN_DAILY="yu_vn_daily_v1",VN_AUTO="yu_vn_auto_speak_v1";
+let vnWords=[],vnCurrent=null,vnCurrentIndex=null,vnQueue=[],vnWrongSet=new Set(),vnLastIndex=null,vnRound=1,vnPhase="full",vnAnswered=false;
+function vnLoad(){try{vnWords=JSON.parse(localStorage.getItem(VN_WORDS)||"[]")}catch(e){vnWords=[]}}
+function vnSave(){localStorage.setItem(VN_WORDS,JSON.stringify(vnWords));vnRender()}
+function vnDaily(){try{return JSON.parse(localStorage.getItem(VN_DAILY)||"{}")}catch(e){return{}}}
+function vnSaveDaily(d){localStorage.setItem(VN_DAILY,JSON.stringify(d))}
+function vnRecordStart(){let d=vnDaily(),k=todayText();d[k]=d[k]||{start:0,round:0,perfect:0};d[k].start++;vnSaveDaily(d);vnRenderDaily()}
+function vnRecordRound(perfect){let d=vnDaily(),k=todayText();d[k]=d[k]||{start:0,round:0,perfect:0};d[k].round++;if(perfect)d[k].perfect++;vnSaveDaily(d);vnRenderDaily()}
+function vnNormalize(s){let text=(s||"").toString().trim().toLowerCase();try{text=text.replace(/[\p{P}\p{S}]/gu,"")}catch(e){text=text.replace(/[.,!?;:'"()[\]{}<>，。！？、；：「」『』（）【】《》…~～\-—_＋+＝=＊*\/\\|@#$%^&`]/g,"")}return text.replace(/\s+/g,"")}
+function vnAddOne(){let vi=$("vnViInput").value.trim(),zh=$("vnZhInput").value.trim(),note=$("vnNoteInput").value.trim();if(!vi||!zh){alert("請輸入越南文和中文意思");return}vnWords.push({vi,zh,note,isNew:true,createdAt:Date.now()});$("vnViInput").value="";$("vnZhInput").value="";$("vnNoteInput").value="";vnResetSession();vnSave()}
+function vnAddBulk(){let text=$("vnBulkInput").value.trim();if(!text){alert("請先貼上單字");return}let added=0;text.split(/\n+/).map(x=>x.trim()).filter(Boolean).forEach(line=>{let m=line.match(/[\u4e00-\u9fff]/);if(m&&m.index>0){let vi=line.slice(0,m.index).trim(),zh=line.slice(m.index).trim();if(vi&&zh){vnWords.push({vi,zh,note:"",isNew:true,createdAt:Date.now()});added++}}});$("vnBulkInput").value="";vnResetSession();vnSave();alert("已新增 "+added+" 組單字")}
+function vnFillDemo(){[{vi:"Không biết",zh:"不知道",note:"không=不；biết=知道"},{vi:"không hiểu",zh:"不懂",note:"hiểu=懂"},{vi:"Cái này bao nhiêu tiền",zh:"這個多少錢",note:"bao nhiêu tiền=多少錢"}].forEach(w=>vnWords.push({...w,isNew:true,createdAt:Date.now()}));vnResetSession();vnSave()}
+function vnDeleteWord(i){if(!confirm("確定刪除這組單字嗎？"))return;vnWords.splice(i,1);vnResetSession();vnSave()}
+function vnUpdateNote(i,v){if(vnWords[i]){vnWords[i].note=v;localStorage.setItem(VN_WORDS,JSON.stringify(vnWords))}}
+function vnClearWords(){if(!confirm("確定清空全部單字嗎？"))return;vnWords=[];vnResetSession();vnSave()}
+function vnExportWords(){csvDownload(`越南文單字_${todayText().replaceAll("-","")}.csv`,[["越南文","中文","備註","是否新單字"],...vnWords.map(w=>[w.vi,w.zh,w.note||"",w.isNew?"新":"舊"])])}
+function vnRender(){vnLoad();$("vnTotalCount").textContent=vnWords.length;let box=$("vnWordList");box.innerHTML=vnWords.length?`<table><thead><tr><th>越南文</th><th>中文</th><th>狀態</th><th>備註</th><th></th></tr></thead><tbody>${vnWords.map((w,i)=>`<tr><td>${w.vi}</td><td>${w.zh}</td><td>${w.isNew?"新":"舊"}</td><td><input class="noteInput" value="${(w.note||"").replace(/"/g,"&quot;")}" oninput="vnUpdateNote(${i},this.value)"></td><td><button class="danger" onclick="vnDeleteWord(${i})">刪除</button></td></tr>`).join("")}</tbody></table>`:'<div class="empty">尚未新增單字</div>';vnRenderDaily()}
+function vnRenderDaily(){let d=vnDaily(),keys=Object.keys(d).sort().reverse();$("vnDailyRecord").innerHTML=keys.length?`<table><thead><tr><th>日期</th><th>複習次數</th><th>完成輪數</th><th>全對次數</th></tr></thead><tbody>${keys.map(k=>`<tr><td>${k}</td><td>${d[k].start||0}</td><td>${d[k].round||0}</td><td>${d[k].perfect||0}</td></tr>`).join("")}</tbody></table>`:'<div class="empty">尚無紀錄</div>';let t=d[todayText()]||{start:0,round:0,perfect:0};$("vnTodayHint").textContent=`今日：複習 ${t.start||0} 次｜完成 ${t.round||0} 輪｜全對 ${t.perfect||0} 次`}
+function vnShuffle(arr){let a=[...arr];for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function vnResetSession(){vnQueue=[];vnWrongSet=new Set();vnLastIndex=null;vnRound=1;vnPhase="full";vnCurrent=null;vnCurrentIndex=null;vnAnswered=false}
+function vnBuildQueue(){let newIdx=vnWords.map((w,i)=>w.isNew?i:null).filter(i=>i!==null);if(newIdx.length){vnPhase="new";vnQueue=vnShuffle(newIdx);return}vnPhase="full";vnQueue=vnShuffle(vnWords.map((_,i)=>i))}
+function vnNextIndex(){if(!vnWords.length)return null;if(!vnQueue.length){if(vnPhase==="new"){if(vnWrongSet.size){vnQueue=vnShuffle([...vnWrongSet]);vnWrongSet.clear()}else{vnWords.forEach(w=>w.isNew=false);localStorage.setItem(VN_WORDS,JSON.stringify(vnWords));vnRecordRound(true);vnBuildQueue()}}else{vnRecordRound(vnWrongSet.size===0);vnQueue=vnWrongSet.size?vnShuffle([...vnWrongSet]):vnShuffle(vnWords.map((_,i)=>i));vnWrongSet.clear();vnRound++}}let idx=vnQueue.shift();vnLastIndex=idx;return idx}
+function vnStartReview(){if(!vnWords.length){alert("請先新增單字再開始複習");return}vnResetSession();vnRecordStart();$("vocabSetup").classList.add("hide");$("vocabReview").classList.remove("hide");vnNextQuestion()}
+function vnBackSetup(){window.speechSynthesis&&speechSynthesis.cancel();$("vocabReview").classList.add("hide");$("vocabSetup").classList.remove("hide");vnRender()}
+function vnResetSessionAndNext(){vnResetSession();vnNextQuestion()}
+function vnNextQuestion(){if(!vnQueue.length)vnBuildQueue();let idx=vnNextIndex();if(idx===null){$("vnQuestion").textContent="請先新增單字";return}vnCurrentIndex=idx;vnCurrent=vnWords[idx];vnAnswered=false;let mode=$("vnModeSelect").value;$("vnQuestion").textContent=mode==="viToZh"?vnCurrent.vi:vnCurrent.zh;$("vnQuizHint").textContent=mode==="viToZh"?"請輸入中文意思":"請輸入越南文";$("vnRoundHint").textContent=`${vnPhase==="new"?"新單字優先":"第 "+vnRound+" 輪"}｜剩餘 ${vnQueue.length} 題`;$("vnQuestionNote").textContent="";$("vnAnswerInput").value="";$("vnResult").textContent="";$("vnAnswerHint").textContent="";$("vnVoiceStatus").textContent="";setTimeout(()=>$("vnAnswerInput").focus(),60);if($("vnAutoSpeak").checked)setTimeout(vnSpeakQuestion,250)}
+function vnCheckAnswer(){if(!vnCurrent){vnNextQuestion();return}let mode=$("vnModeSelect").value,ans=vnNormalize($("vnAnswerInput").value),correct=mode==="viToZh"?vnCurrent.zh:vnCurrent.vi,ok=correct.split(/[\/／、,，]/).map(vnNormalize).filter(Boolean).includes(ans);vnAnswered=true;if(ok){$("vnResult").innerHTML='<span class="ok">✅</span>';$("vnAnswerHint").textContent="答對了";$("vnQuestionNote").textContent=vnCurrent.note?"備註："+vnCurrent.note:"";setTimeout(vnNextQuestion,650)}else{$("vnResult").innerHTML='<span class="bad">✗</span>';$("vnAnswerHint").textContent="正確答案："+correct;$("vnQuestionNote").textContent=vnCurrent.note?"備註："+vnCurrent.note:"";vnWrongSet.add(vnCurrentIndex)}}
+function vnSpeakQuestion(){if(!vnCurrent||!("speechSynthesis" in window))return;speechSynthesis.cancel();let text=$("vnModeSelect").value==="viToZh"?vnCurrent.vi:vnCurrent.vi;let u=new SpeechSynthesisUtterance(text);u.lang="vi-VN";u.rate=.9;u.pitch=1;let vi=speechSynthesis.getVoices().find(v=>(v.lang||"").toLowerCase().includes("vi"));if(vi)u.voice=vi;u.onstart=()=>$("vnVoiceStatus").textContent="發音中："+text;u.onend=()=>$("vnVoiceStatus").textContent="播放完成";speechSynthesis.speak(u)}
+function vnSaveAutoSpeak(){localStorage.setItem(VN_AUTO,$("vnAutoSpeak").checked?"1":"0")}
+$("vnAutoSpeak").checked=localStorage.getItem(VN_AUTO)==="1";if("speechSynthesis" in window){speechSynthesis.getVoices();speechSynthesis.onvoiceschanged=()=>speechSynthesis.getVoices()}
 
-    const defaultData={
-      version:"2.2-from-v1.6-fitness-multi-exercise-fixed",
-      settings:{
-        targetStudyMinutes:30,studyMinutes:10,breakMinutes:5,
-        itemType:"學習",customItem:"",
-        fitnessBodyPart:"背",fitnessExercise:"槓鈴划船",fitnessCustomExercise:"",fitnessRestInput:"1"
-      },
-      learningState:{
-        status:"idle",currentPhase:"study",startedAt:null,baseElapsedSeconds:0,baseCompletedStudySeconds:0,
-        remainingPhaseSeconds:600,dayBaseDate:"",dayBaseSeconds:0,updatedAt:0,updatedBy:""
-      },
-      fitnessSession:{
-        status:"idle",key:"",date:"",bodyPart:"背",currentExercise:"",restTargetSeconds:60,
-        segmentType:"action",segmentStartedAt:null,currentActionSeconds:0,currentRestSeconds:0,currentSegments:[],
-        exercises:[],updatedAt:0,updatedBy:""
-      },
-      records:{},
-      recordItems:{},
-      fitnessRecords:{}
-    };
-
-    let cloudData=null,serverOffset=0,localTick=null,audioCtx=null,applyingRemote=false,settingsWriteTimer=null,pinUnlocked=sessionStorage.getItem("studyTimerPinUnlocked")==="1",restAlarmKey="";
-    const $=id=>document.getElementById(id);
-
-    const cloudDot=$("cloudDot"),cloudText=$("cloudText");
-    const pinStatus=$("pinStatus"),pinInput=$("pinInput"),unlockPinBtn=$("unlockPinBtn"),lockPinBtn=$("lockPinBtn"),pinMsg=$("pinMsg");
-    const itemType=$("itemType"),customItem=$("customItem"),itemCurrent=$("itemCurrent");
-    const studySettings=$("studySettings"),fitnessSettings=$("fitnessSettings"),fitnessActions=$("fitnessActions");
-    const targetInput=$("targetStudyMinutes"),studyInput=$("studyMinutes"),breakInput=$("breakMinutes");
-    const bodyPartSelect=$("bodyPartSelect"),exerciseSelect=$("exerciseSelect"),customExerciseInput=$("customExerciseInput"),fitnessRestInput=$("fitnessRestInput");
-    const todayDate=$("todayDate"),todayStudyTime=$("todayStudyTime"),phaseText=$("phaseText"),timeDisplay=$("timeDisplay"),percentText=$("percentText"),totalDisplay=$("totalDisplay"),circleProgress=$("circleProgress");
-    const startBtn=$("startBtn"),pauseBtn=$("pauseBtn"),resetSessionBtn=$("resetSessionBtn"),testSoundBtn=$("testSoundBtn"),forceSyncBtn=$("forceSyncBtn"),restToggleBtn=$("restToggleBtn"),finishExerciseBtn=$("finishExerciseBtn"),finishSessionBtn=$("finishSessionBtn");
-    const recordBody=$("recordBody"),clearTodayBtn=$("clearTodayBtn"),clearAllBtn=$("clearAllBtn");
-    circleProgress.style.strokeDasharray=CIRCUMFERENCE;
-    circleProgress.style.strokeDashoffset=CIRCUMFERENCE;
-
-    function clone(obj){return JSON.parse(JSON.stringify(obj))}
-    function nowMs(){return Date.now()+serverOffset}
-    function todayKey(ts=nowMs()){let d=new Date(ts),y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0"),day=String(d.getDate()).padStart(2,"0");return `${y}-${m}-${day}`}
-    function pad(n){return String(n).padStart(2,"0")}
-    function fmtTimer(sec){sec=Math.max(0,Math.floor(sec));let m=Math.floor(sec/60),s=sec%60;return `${pad(m)}:${pad(s)}`}
-    function fmtLong(sec){sec=Math.max(0,Math.floor(sec));let h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=sec%60;return `${pad(h)}:${pad(m)}:${pad(s)}`}
-    function fmtRead(sec){sec=Math.max(0,Math.floor(sec));let h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=sec%60;if(h>0)return `${h} 小時 ${m} 分 ${s} 秒`;if(m>0)return `${m} 分 ${s} 秒`;return `${s} 秒`}
-    function inNum(input,fallback){let v=parseInt(input.value,10);return Number.isFinite(v)&&v>0?v:fallback}
-    function parseFitnessRest(value){let raw=String(value||"").trim().replace("：",":").replace("．",".");if(!raw)return 60;if(raw.includes(":")){let [m,s]=raw.split(":");return Math.max(1,(parseInt(m||"0",10)||0)*60+(parseInt(s||"0",10)||0))}if(raw.includes(".")){let [m,secText]=raw.split(".");let min=parseInt(m||"0",10)||0;secText=(secText||"").trim();let sec=secText.length===1?(parseInt(secText,10)||0)*10:(parseInt(secText.slice(0,2)||"0",10)||0);return Math.max(1,min*60+sec)}let min=parseInt(raw,10);if(!Number.isFinite(min)||min<0)min=1;return Math.max(1,min*60)}
-    function currentRestSeconds(s=settings()){return parseFitnessRest(s.fitnessRestInput)}
-
-    function settings(d=cloudData){let s=d?.settings||defaultData.settings;return{
-      targetStudyMinutes:Math.max(1,parseInt(s.targetStudyMinutes||30,10)),
-      studyMinutes:Math.max(1,parseInt(s.studyMinutes||10,10)),
-      breakMinutes:Math.max(1,parseInt(s.breakMinutes||5,10)),
-      itemType:s.itemType||"學習",
-      customItem:s.customItem||"",
-      fitnessBodyPart:s.fitnessBodyPart||"背",
-      fitnessExercise:s.fitnessExercise||"槓鈴划船",
-      fitnessCustomExercise:s.fitnessCustomExercise||"",
-      fitnessRestInput:s.fitnessRestInput||"1"
-    }}
-    function currentItemName(d=cloudData){let s=settings(d);return s.itemType==="custom"?(s.customItem||"自行輸入"):(s.itemType||"學習")}
-    function currentExerciseName(s=settings()){return s.fitnessExercise==="自行輸入"?(s.fitnessCustomExercise||"自行輸入"):s.fitnessExercise}
-
-    function computeLearning(d=cloudData,t=nowMs()){
-      if(!d)d=clone(defaultData);let s=settings(d),st=d.learningState||defaultData.learningState,status=st.status||"idle";
-      let target=s.targetStudyMinutes*60,study=s.studyMinutes*60,br=s.breakMinutes*60;
-      let elapsed=Math.max(0,st.baseElapsedSeconds||0);
-      if(status==="running"&&st.startedAt)elapsed+=Math.max(0,Math.floor((t-st.startedAt)/1000));
-      if(status==="idle")return{status,effectiveElapsed:0,completedStudy:0,target,currentPhase:"study",remainingPhase:Math.min(study,target),finished:false,percent:0};
-      if(status==="paused")return{status,effectiveElapsed:elapsed,completedStudy:Math.min(target,st.baseCompletedStudySeconds||0),target,currentPhase:st.currentPhase||"study",remainingPhase:Math.max(0,st.remainingPhaseSeconds||0),finished:false,percent:target?Math.min(100,(st.baseCompletedStudySeconds||0)/target*100):0};
-      if(status==="finished")return{status,effectiveElapsed:elapsed,completedStudy:target,target,currentPhase:"study",remainingPhase:0,finished:true,percent:100};
-      let rem=elapsed,completed=0,phase="study",remaining=Math.min(study,target),finished=false;
-      while(true){let studyRound=Math.min(study,target-completed);if(rem<studyRound){phase="study";completed+=rem;remaining=studyRound-rem;break}rem-=studyRound;completed+=studyRound;if(completed>=target){phase="study";remaining=0;finished=true;break}if(rem<br){phase="break";remaining=br-rem;break}rem-=br}
-      completed=Math.min(target,Math.max(0,Math.floor(completed)));remaining=Math.max(0,Math.ceil(remaining));
-      return{status,effectiveElapsed:elapsed,completedStudy:completed,target,currentPhase:phase,remainingPhase:remaining,finished,percent:target?Math.min(100,completed/target*100):0}
-    }
-
-    function sumExercises(exercises=[]){return exercises.reduce((sum,e)=>sum+(e.totalSeconds||0),0)}
-    function sumAction(exercises=[]){return exercises.reduce((sum,e)=>sum+(e.actionSeconds||0),0)}
-    function sumRest(exercises=[]){return exercises.reduce((sum,e)=>sum+(e.restSeconds||0),0)}
-
-    function computeFitness(d=cloudData,t=nowMs()){
-      let fs=d?.fitnessSession||defaultData.fitnessSession;
-      let status=fs.status||"idle";
-      let live=0;
-      if(status==="running"&&fs.segmentStartedAt)live=Math.max(0,Math.floor((t-fs.segmentStartedAt)/1000));
-      let currentAction=fs.currentActionSeconds||0,currentRest=fs.currentRestSeconds||0;
-      if(status==="running"){
-        if(fs.segmentType==="rest")currentRest+=live;
-        else currentAction+=live;
-      }
-      let completedTotal=sumExercises(fs.exercises||[]);
-      let total=completedTotal+currentAction+currentRest;
-      let restTarget=fs.restTargetSeconds||60;
-      let restLive=(status==="running"&&fs.segmentType==="rest")?live:0;
-      let restRemaining=Math.max(0,restTarget-restLive);
-      return{status,segmentType:fs.segmentType||"action",currentActionSeconds:currentAction,currentRestSeconds:currentRest,actionSeconds:sumAction(fs.exercises||[])+currentAction,restSeconds:sumRest(fs.exercises||[])+currentRest,totalSeconds:total,restTargetSeconds:restTarget,restRemaining,liveSeconds:live}
-    }
-
-    function todayTotal(d=cloudData){
-      if(!d)return 0;let today=todayKey(),total=0;
-      Object.entries(d.records||{}).forEach(([date,sec])=>{if(date===today)total+=sec||0});
-      Object.values(d.fitnessRecords||{}).forEach(r=>{if(r&&r.date===today)total+=r.totalSeconds||0});
-      let s=settings(d);
-      if(s.itemType==="健身"){let f=computeFitness(d),fs=d.fitnessSession||{};if(["running","paused","selecting"].includes(f.status)&&fs.date===today)total+=f.totalSeconds}
-      else{let c=computeLearning(d),st=d.learningState||{};if(["running","paused"].includes(st.status)&&st.dayBaseDate===today)total+=c.completedStudy}
-      return total
-    }
-
-    function setPhase(text,bg,color,border){phaseText.textContent=text;phaseText.style.background=bg;phaseText.style.color=color;phaseText.style.borderColor=border||"rgba(148,163,184,.18)"}
-
-    function renderExerciseOptions(s=settings()){
-      let list=exerciseMap[s.fitnessBodyPart]||exerciseMap["背"];
-      exerciseSelect.innerHTML=list.map(x=>`<option value="${x}">${x}</option>`).join("");
-      exerciseSelect.value=list.includes(s.fitnessExercise)?s.fitnessExercise:list[0];
-      customExerciseInput.style.display=exerciseSelect.value==="自行輸入"?"block":"none";
-    }
-
-    function renderRecords(d=cloudData){
-      let rows=[];
-      Object.keys(d.records||{}).sort().reverse().forEach(date=>{rows.push({type:"legacy",date,item:(d.recordItems||{})[date]||"",seconds:(d.records||{})[date]||0,detail:""})});
-      Object.entries(d.fitnessRecords||{}).forEach(([key,r])=>{if(!r)return;rows.push({type:"fitness",key,date:r.date||"",item:r.bodyPart||"",seconds:r.totalSeconds||0,detail:"查看"})});
-      rows.sort((a,b)=>(b.date||"").localeCompare(a.date||""));
-      if(rows.length===0){recordBody.innerHTML='<tr><td colspan="4">尚無紀錄</td></tr>';return}
-      recordBody.innerHTML=rows.map(r=>{let detail=r.type==="fitness"?`<button class="detail-btn" onclick="showFitnessDetail('${r.key}')">查看</button>`:"";return `<tr><td>${r.date}</td><td>${r.item}</td><td>${fmtRead(r.seconds)}</td><td>${detail}</td></tr>`}).join("");
-    }
-
-    window.showFitnessDetail=function(key){
-      let r=cloudData?.fitnessRecords?.[key];
-      if(!r){alert("找不到詳細資料");return}
-      let lines=[];
-      lines.push(`日期：${r.date||""}`);
-      lines.push(`部位：${r.bodyPart||""}`);
-      lines.push(`總時長：${fmtRead(r.totalSeconds||0)}`);
-      lines.push(`總動作時間：${fmtRead(r.actionSeconds||0)}`);
-      lines.push(`總休息時間：${fmtRead(r.restSeconds||0)}`);
-      lines.push("");
-      lines.push("動作明細：");
-      (r.exercises||[]).forEach((ex,i)=>{
-        lines.push("");
-        lines.push(`${i+1}. ${ex.exercise||""}`);
-        lines.push(`   動作時間：${fmtRead(ex.actionSeconds||0)}`);
-        lines.push(`   休息時間：${fmtRead(ex.restSeconds||0)}`);
-        lines.push(`   合計：${fmtRead(ex.totalSeconds||0)}`);
-        (ex.segments||[]).forEach((seg,j)=>{lines.push(`   ${j+1}) ${seg.type==="rest"?"休息":"動作"} ${fmtRead(seg.seconds||0)}`)});
-      });
-      alert(lines.join("\n"));
-    }
-
-    function render(){
-      if(!cloudData)return;
-      let s=settings(cloudData),mode=s.itemType;
-
-      applyingRemote=true;
-      targetInput.value=s.targetStudyMinutes;studyInput.value=s.studyMinutes;breakInput.value=s.breakMinutes;
-      itemType.value=s.itemType;customItem.value=s.customItem||"";customItem.style.display=itemType.value==="custom"?"block":"none";
-      bodyPartSelect.value=s.fitnessBodyPart;fitnessRestInput.value=s.fitnessRestInput||"1";renderExerciseOptions(s);customExerciseInput.value=s.fitnessCustomExercise||"";
-      applyingRemote=false;
-
-      itemCurrent.textContent="目前項目："+currentItemName(cloudData);
-      if(mode==="健身"){studySettings.classList.add("hidden");fitnessSettings.classList.remove("hidden");fitnessActions.classList.remove("hidden")}
-      else{studySettings.classList.remove("hidden");fitnessSettings.classList.add("hidden");fitnessActions.classList.add("hidden")}
-
-      todayDate.textContent=todayKey();
-      todayStudyTime.textContent=fmtLong(todayTotal(cloudData));
-
-      if(mode==="健身"){
-        let f=computeFitness(cloudData),fs=cloudData.fitnessSession||{};
-        timeDisplay.textContent=fmtTimer(f.totalSeconds);
-        percentText.textContent="總時長";
-        circleProgress.style.strokeDashoffset=0;
-        let currentEx=fs.currentExercise||currentExerciseName(s);
-        totalDisplay.innerHTML=`${s.fitnessBodyPart}｜目前動作：${currentEx}<br>總時長 ${fmtRead(f.totalSeconds)}｜動作 ${fmtRead(f.actionSeconds)}｜休息 ${fmtRead(f.restSeconds)}｜休息設定 ${fmtRead(f.restTargetSeconds)}`;
-        if(f.status==="running"){
-          if(f.segmentType==="rest"){
-            setPhase(`休息中：剩 ${fmtTimer(f.restRemaining)}`,"rgba(251,191,36,.14)","#facc15","rgba(250,204,21,.22)");
-            restToggleBtn.textContent="結束休息";
-            let alarmKey=`${fs.key}-${fs.segmentStartedAt}`;
-            if(f.restRemaining<=0&&alarmKey!==restAlarmKey){restAlarmKey=alarmKey;playAlarm("breakEnd")}
-          }else{
-            setPhase("動作中","rgba(34,197,94,.14)","#86efac","rgba(134,239,172,.2)");
-            restToggleBtn.textContent="開始休息";
-          }
-          startBtn.textContent="開始";startBtn.disabled=true;pauseBtn.disabled=false;
-        }else if(f.status==="paused"){
-          setPhase("已暫停","rgba(148,163,184,.14)","#cbd5e1","rgba(203,213,225,.18)");
-          startBtn.textContent="繼續";startBtn.disabled=false;pauseBtn.disabled=true;restToggleBtn.textContent=f.segmentType==="rest"?"結束休息":"開始休息";
-        }else if(f.status==="selecting"){
-          setPhase("請選擇下一個動作","rgba(59,130,246,.16)","#93c5fd","rgba(147,197,253,.18)");
-          startBtn.textContent="開始下一個動作";startBtn.disabled=false;pauseBtn.disabled=true;restToggleBtn.textContent="開始休息";
-        }else if(f.status==="finished"){
-          setPhase("完成！","rgba(129,140,248,.16)","#c4b5fd","rgba(196,181,253,.22)");
-          startBtn.textContent="重新開始";startBtn.disabled=false;pauseBtn.disabled=true;restToggleBtn.textContent="開始休息";
-        }else{
-          setPhase("尚未開始","rgba(59,130,246,.16)","#93c5fd","rgba(147,197,253,.18)");
-          startBtn.textContent="開始";startBtn.disabled=false;pauseBtn.disabled=true;restToggleBtn.textContent="開始休息";
-        }
-      }else{
-        let c=computeLearning(cloudData),status=(cloudData.learningState||{}).status||"idle";
-        timeDisplay.textContent=fmtTimer(c.remainingPhase);
-        percentText.textContent=`${Math.round(c.percent)}%`;
-        circleProgress.style.strokeDashoffset=CIRCUMFERENCE*(1-c.percent/100);
-        totalDisplay.textContent=`本次已學習 ${Math.floor(c.completedStudy/60)} 分鐘 / 目標 ${Math.floor(c.target/60)} 分鐘`;
-        if(status==="idle"){setPhase("尚未開始","rgba(59,130,246,.16)","#93c5fd","rgba(147,197,253,.18)");startBtn.textContent="開始";startBtn.disabled=false;pauseBtn.disabled=true}
-        else if(status==="running"){if(c.currentPhase==="study")setPhase("學習中","rgba(34,197,94,.14)","#86efac","rgba(134,239,172,.2)");else setPhase("休息中","rgba(251,191,36,.14)","#facc15","rgba(250,204,21,.22)");startBtn.textContent="開始";startBtn.disabled=true;pauseBtn.disabled=false}
-        else if(status==="paused"){setPhase(`已暫停：${c.currentPhase==="study"?"學習中":"休息中"}`,"rgba(148,163,184,.14)","#cbd5e1","rgba(203,213,225,.18)");startBtn.textContent="繼續";startBtn.disabled=false;pauseBtn.disabled=true}
-        else if(status==="finished"){setPhase("完成！","rgba(129,140,248,.16)","#c4b5fd","rgba(196,181,253,.22)");startBtn.textContent="重新開始";startBtn.disabled=false;pauseBtn.disabled=true}
-        if(status==="running"&&c.finished)finishLearning(false);
-      }
-
-      renderRecords(cloudData);
-      setControlsDisabled(mode==="健身"?["running","paused"].includes((cloudData.fitnessSession||{}).status):["running","paused"].includes((cloudData.learningState||{}).status));
-      updatePinUI();
-      if(pinUnlocked){resetSessionBtn.disabled=false;clearTodayBtn.disabled=false;clearAllBtn.disabled=false;testSoundBtn.disabled=false;forceSyncBtn.disabled=false;finishExerciseBtn.disabled=false;finishSessionBtn.disabled=false}
-    }
-
-    function updateCloudStatus(connected){if(connected){cloudDot.className="dot online";cloudText.textContent=`雲端已連線｜房間：${ROOM_ID}`}else{cloudDot.className="dot offline";cloudText.textContent="雲端未連線"}}
-    function setControlsDisabled(x){let locked=!pinUnlocked;[targetInput,studyInput,breakInput,itemType,customItem,bodyPartSelect,exerciseSelect,customExerciseInput,fitnessRestInput].forEach(el=>el.disabled=x||locked);restToggleBtn.disabled=locked;finishExerciseBtn.disabled=locked;finishSessionBtn.disabled=locked}
-    function updatePinUI(){if(pinUnlocked){pinStatus.textContent="已解鎖";pinStatus.className="pin-status unlocked";pinMsg.textContent=""}else{pinStatus.textContent="目前只能查看，要操作請輸入 PIN。";pinStatus.className="pin-status";pinMsg.textContent="";[startBtn,pauseBtn,resetSessionBtn,clearTodayBtn,clearAllBtn,restToggleBtn,finishExerciseBtn,finishSessionBtn].forEach(b=>b.disabled=true);setControlsDisabled(true)}}
-    function requireUnlock(){if(pinUnlocked)return true;alert("請先輸入 PIN 解鎖操作。");pinInput.focus();return false}
-    function unlockPin(){if(pinInput.value===CONTROL_PIN){pinUnlocked=true;sessionStorage.setItem("studyTimerPinUnlocked","1");pinInput.value="";updatePinUI();render()}else{pinMsg.textContent="PIN 錯誤，請再試一次。";pinInput.select()}}
-    function lockPin(){pinUnlocked=false;sessionStorage.removeItem("studyTimerPinUnlocked");updatePinUI();render()}
-
-    function getCtx(){if(!audioCtx){const AC=window.AudioContext||window.webkitAudioContext;audioCtx=new AC()}if(audioCtx.state==="suspended")audioCtx.resume();return audioCtx}
-    function tone(f,start,dur,vol=.12){let ctx=getCtx(),osc=ctx.createOscillator(),gain=ctx.createGain();osc.type="sine";osc.frequency.setValueAtTime(f,start);gain.gain.setValueAtTime(.0001,start);gain.gain.exponentialRampToValueAtTime(vol,start+.02);gain.gain.exponentialRampToValueAtTime(.0001,start+dur);osc.connect(gain);gain.connect(ctx.destination);osc.start(start);osc.stop(start+dur+.03)}
-    function playAlarm(type="normal"){try{let ctx=getCtx(),n=ctx.currentTime;if(type==="finish"){tone(784,n,.18);tone(988,n+.22,.18);tone(1175,n+.44,.18);tone(1568,n+.66,.38)}else{tone(880,n,.2);tone(1046,n+.25,.25)}}catch(e){console.log(e)}}
-
-    function writeSettings(){
-      if(!pinUnlocked||applyingRemote||!cloudData)return;
-      clearTimeout(settingsWriteTimer);
-      settingsWriteTimer=setTimeout(async()=>{
-        let s=settings(cloudData),mode=itemType.value||"學習";
-        let busy=mode==="健身"?["running","paused"].includes((cloudData.fitnessSession||{}).status):["running","paused"].includes((cloudData.learningState||{}).status);
-        if(busy)return;
-        let set={
-          targetStudyMinutes:inNum(targetInput,s.targetStudyMinutes),
-          studyMinutes:inNum(studyInput,s.studyMinutes),
-          breakMinutes:inNum(breakInput,s.breakMinutes),
-          itemType:mode,
-          customItem:customItem.value||"",
-          fitnessBodyPart:bodyPartSelect.value||"背",
-          fitnessExercise:exerciseSelect.value||"槓鈴划船",
-          fitnessCustomExercise:customExerciseInput.value||"",
-          fitnessRestInput:fitnessRestInput.value||"1"
-        };
-        await roomRef.update({settings:set,"learningState/updatedAt":firebase.database.ServerValue.TIMESTAMP,"learningState/updatedBy":CLIENT_ID})
-      },350)
-    }
-
-    async function startOrResume(){
-      if(!requireUnlock())return;
-      getCtx();
-      let snap=await roomRef.once("value"),d=snap.val()||clone(defaultData),s=settings(d),mode=itemType.value||s.itemType,now=nowMs();
-      if(mode==="健身")return startFitness(d,s,now);
-      return startLearning(d,s,now)
-    }
-
-    async function startLearning(d,s,now){
-      let status=(d.learningState||{}).status||"idle";
-      if(status==="running")return;
-      let u={};
-      if(status==="idle"||status==="finished"){
-        let newSet={targetStudyMinutes:inNum(targetInput,s.targetStudyMinutes),studyMinutes:inNum(studyInput,s.studyMinutes),breakMinutes:inNum(breakInput,s.breakMinutes),itemType:itemType.value||"學習",customItem:customItem.value||""};
-        let target=newSet.targetStudyMinutes*60,study=newSet.studyMinutes*60,today=todayKey(),records=d.records||{},dayBase=records[today]||0;
-        u={settings:{...s,...newSet},"learningState/status":"running","learningState/currentPhase":"study","learningState/startedAt":now,"learningState/baseElapsedSeconds":0,"learningState/baseCompletedStudySeconds":0,"learningState/remainingPhaseSeconds":Math.min(study,target),"learningState/dayBaseDate":today,"learningState/dayBaseSeconds":dayBase,"learningState/updatedAt":firebase.database.ServerValue.TIMESTAMP,"learningState/updatedBy":CLIENT_ID}
-      }else if(status==="paused"){
-        let c=computeLearning(d,now);
-        u={"learningState/status":"running","learningState/currentPhase":c.currentPhase,"learningState/startedAt":now,"learningState/baseElapsedSeconds":c.effectiveElapsed,"learningState/baseCompletedStudySeconds":c.completedStudy,"learningState/remainingPhaseSeconds":c.remainingPhase,"learningState/updatedAt":firebase.database.ServerValue.TIMESTAMP,"learningState/updatedBy":CLIENT_ID}
-      }
-      await roomRef.update(u)
-    }
-
-    async function startFitness(d,s,now){
-      let fs=d.fitnessSession||{},status=fs.status||"idle";
-      if(status==="running")return;
-      let set={...s,itemType:"健身",fitnessBodyPart:bodyPartSelect.value||"背",fitnessExercise:exerciseSelect.value||"槓鈴划船",fitnessCustomExercise:customExerciseInput.value||"",fitnessRestInput:fitnessRestInput.value||"1"};
-      let selectedExercise=set.fitnessExercise==="自行輸入"?(set.fitnessCustomExercise||"自行輸入"):set.fitnessExercise;
-      let restTarget=parseFitnessRest(set.fitnessRestInput);
-      let u={settings:set};
-      if(status==="paused"){
-        u["fitnessSession/status"]="running";
-        u["fitnessSession/segmentStartedAt"]=now;
-        u["fitnessSession/updatedAt"]=firebase.database.ServerValue.TIMESTAMP;
-        u["fitnessSession/updatedBy"]=CLIENT_ID;
-      }else if(status==="selecting"){
-        u["fitnessSession/status"]="running";
-        u["fitnessSession/currentExercise"]=selectedExercise;
-        u["fitnessSession/restTargetSeconds"]=restTarget;
-        u["fitnessSession/segmentType"]="action";
-        u["fitnessSession/segmentStartedAt"]=now;
-        u["fitnessSession/currentActionSeconds"]=0;
-        u["fitnessSession/currentRestSeconds"]=0;
-        u["fitnessSession/currentSegments"]=[];
-        u["fitnessSession/updatedAt"]=firebase.database.ServerValue.TIMESTAMP;
-        u["fitnessSession/updatedBy"]=CLIENT_ID;
-      }else{
-        let key=`fit_${now}`;
-        u["fitnessSession"]={status:"running",key,date:todayKey(),bodyPart:set.fitnessBodyPart,currentExercise:selectedExercise,restTargetSeconds:restTarget,segmentType:"action",segmentStartedAt:now,currentActionSeconds:0,currentRestSeconds:0,currentSegments:[],exercises:[],updatedAt:firebase.database.ServerValue.TIMESTAMP,updatedBy:CLIENT_ID}
-      }
-      await roomRef.update(u)
-    }
-
-    function learningRecordUpdates(d,c){let st=d.learningState||{},day=st.dayBaseDate||todayKey(),base=st.dayBaseSeconds||0,u={};u[`records/${day}`]=base+(c.completedStudy||0);u[`recordItems/${day}`]=currentItemName(d);return u}
-
-    async function pauseTimer(){if(!requireUnlock())return;let snap=await roomRef.once("value"),d=snap.val()||clone(defaultData),s=settings(d);if(s.itemType==="健身")return pauseFitness(d);return pauseLearning(d)}
-    async function pauseLearning(d){let st=d.learningState||{};if(st.status!=="running")return;let c=computeLearning(d),u=learningRecordUpdates(d,c);Object.assign(u,{"learningState/status":"paused","learningState/currentPhase":c.currentPhase,"learningState/startedAt":null,"learningState/baseElapsedSeconds":c.effectiveElapsed,"learningState/baseCompletedStudySeconds":c.completedStudy,"learningState/remainingPhaseSeconds":c.remainingPhase,"learningState/updatedAt":firebase.database.ServerValue.TIMESTAMP,"learningState/updatedBy":CLIENT_ID});await roomRef.update(u)}
-
-    function finalizeFitnessSegment(d,now=nowMs()){
-      let fs=d.fitnessSession||{},live=0;
-      if(fs.status==="running"&&fs.segmentStartedAt)live=Math.max(0,Math.floor((now-fs.segmentStartedAt)/1000));
-      let action=fs.currentActionSeconds||0,rest=fs.currentRestSeconds||0,segs=[...(fs.currentSegments||[])];
-      if(live>0){
-        if(fs.segmentType==="rest"){rest+=live;segs.push({type:"rest",seconds:live})}
-        else{action+=live;segs.push({type:"action",seconds:live})}
-      }
-      return{actionSeconds:action,restSeconds:rest,segments:segs}
-    }
-
-    async function pauseFitness(d){
-      let fs=d.fitnessSession||{};
-      if(fs.status!=="running")return;
-      let f=finalizeFitnessSegment(d);
-      await roomRef.update({"fitnessSession/status":"paused","fitnessSession/segmentStartedAt":null,"fitnessSession/currentActionSeconds":f.actionSeconds,"fitnessSession/currentRestSeconds":f.restSeconds,"fitnessSession/currentSegments":f.segments,"fitnessSession/updatedAt":firebase.database.ServerValue.TIMESTAMP,"fitnessSession/updatedBy":CLIENT_ID})
-    }
-
-    async function toggleRest(){
-      if(!requireUnlock())return;
-      let snap=await roomRef.once("value"),d=snap.val()||clone(defaultData),fs=d.fitnessSession||{};
-      if(settings(d).itemType!=="健身"){alert("請先切換到健身。");return}
-      if(fs.status!=="running"){alert("請先按開始。");return}
-      let f=finalizeFitnessSegment(d),nextType=fs.segmentType==="rest"?"action":"rest";
-      await roomRef.update({"fitnessSession/segmentType":nextType,"fitnessSession/segmentStartedAt":nowMs(),"fitnessSession/currentActionSeconds":f.actionSeconds,"fitnessSession/currentRestSeconds":f.restSeconds,"fitnessSession/currentSegments":f.segments,"fitnessSession/updatedAt":firebase.database.ServerValue.TIMESTAMP,"fitnessSession/updatedBy":CLIENT_ID})
-    }
-
-    async function finishCurrentExercise(){
-      if(!requireUnlock())return;
-      let snap=await roomRef.once("value"),d=snap.val()||clone(defaultData),fs=d.fitnessSession||{};
-      if(settings(d).itemType!=="健身"){alert("請先切換到健身。");return}
-      if(!fs.key||fs.status==="idle"||fs.status==="finished"){alert("目前沒有正在進行的健身動作。");return}
-      let f=finalizeFitnessSegment(d),total=f.actionSeconds+f.restSeconds;
-      if(total<=0){alert("目前這個動作還沒有紀錄時間。");return}
-      let ex={exercise:fs.currentExercise||currentExerciseName(settings(d)),actionSeconds:f.actionSeconds,restSeconds:f.restSeconds,totalSeconds:total,restTargetSeconds:fs.restTargetSeconds||currentRestSeconds(settings(d)),segments:f.segments};
-      let exercises=[...(fs.exercises||[]),ex];
-      await roomRef.update({"fitnessSession/status":"selecting","fitnessSession/segmentStartedAt":null,"fitnessSession/currentExercise":"","fitnessSession/currentActionSeconds":0,"fitnessSession/currentRestSeconds":0,"fitnessSession/currentSegments":[],"fitnessSession/segmentType":"action","fitnessSession/exercises":exercises,"fitnessSession/updatedAt":firebase.database.ServerValue.TIMESTAMP,"fitnessSession/updatedBy":CLIENT_ID});
-      alert("此動作已完成，請選擇下一個動作後按開始。")
-    }
-
-    async function resetSession(){
-      if(!requireUnlock())return;
-      let snap=await roomRef.once("value"),d=snap.val()||clone(defaultData),s=settings(d);
-      if(s.itemType==="健身"){
-        let fs=d.fitnessSession||{},u={};
-        if(fs.key)u[`fitnessRecords/${fs.key}`]=null;
-        u["fitnessSession"]={...defaultData.fitnessSession,status:"idle",bodyPart:s.fitnessBodyPart,restTargetSeconds:currentRestSeconds(s),updatedAt:firebase.database.ServerValue.TIMESTAMP,updatedBy:CLIENT_ID};
-        await roomRef.update(u);
-        return;
-      }
-      let st=d.learningState||{},target=s.targetStudyMinutes*60,study=s.studyMinutes*60,u={};
-      if(st.dayBaseDate){u[`records/${st.dayBaseDate}`]=(st.dayBaseSeconds||0)>0?(st.dayBaseSeconds||0):null;if(!(st.dayBaseSeconds||0))u[`recordItems/${st.dayBaseDate}`]=null}
-      Object.assign(u,{"learningState/status":"idle","learningState/currentPhase":"study","learningState/startedAt":null,"learningState/baseElapsedSeconds":0,"learningState/baseCompletedStudySeconds":0,"learningState/remainingPhaseSeconds":Math.min(study,target),"learningState/dayBaseDate":"","learningState/dayBaseSeconds":0,"learningState/updatedAt":firebase.database.ServerValue.TIMESTAMP,"learningState/updatedBy":CLIENT_ID});
-      await roomRef.update(u)
-    }
-
-    async function finishLearning(showAlert=true){let snap=await roomRef.once("value"),d=snap.val();if(!d||d.learningState?.status==="finished")return;let c=computeLearning(d),u=learningRecordUpdates(d,c);Object.assign(u,{"learningState/status":"finished","learningState/currentPhase":"study","learningState/startedAt":null,"learningState/baseElapsedSeconds":c.effectiveElapsed,"learningState/baseCompletedStudySeconds":c.target,"learningState/remainingPhaseSeconds":0,"learningState/updatedAt":firebase.database.ServerValue.TIMESTAMP,"learningState/updatedBy":CLIENT_ID});await roomRef.update(u);playAlarm("finish");if(showAlert)alert("本次目標完成！")}
-
-    async function finishFitness(){
-      if(!requireUnlock())return;
-      let snap=await roomRef.once("value"),d=snap.val()||clone(defaultData),fs=d.fitnessSession||{};
-      if(!fs.key||fs.status==="idle"){alert("目前沒有正在進行的健身紀錄。");return}
-      let exercises=[...(fs.exercises||[])];
-      let f=finalizeFitnessSegment(d),currentTotal=f.actionSeconds+f.restSeconds;
-      if(currentTotal>0){exercises.push({exercise:fs.currentExercise||currentExerciseName(settings(d)),actionSeconds:f.actionSeconds,restSeconds:f.restSeconds,totalSeconds:currentTotal,restTargetSeconds:fs.restTargetSeconds||currentRestSeconds(settings(d)),segments:f.segments})}
-      if(exercises.length===0){alert("本次健身還沒有任何動作紀錄。");return}
-      let totalAction=sumAction(exercises),totalRest=sumRest(exercises),total=totalAction+totalRest;
-      let record={date:fs.date||todayKey(),bodyPart:fs.bodyPart||settings(d).fitnessBodyPart,actionSeconds:totalAction,restSeconds:totalRest,totalSeconds:total,exercises,finishedAt:nowMs()};
-      let u={};u[`fitnessRecords/${fs.key}`]=record;u["fitnessSession/status"]="finished";u["fitnessSession/segmentStartedAt"]=null;u["fitnessSession/currentActionSeconds"]=0;u["fitnessSession/currentRestSeconds"]=0;u["fitnessSession/currentSegments"]=[];u["fitnessSession/exercises"]=exercises;u["fitnessSession/updatedAt"]=firebase.database.ServerValue.TIMESTAMP;u["fitnessSession/updatedBy"]=CLIENT_ID;
-      await roomRef.update(u);playAlarm("finish");alert("本次健身紀錄完成！")
-    }
-
-    async function clearToday(){if(!requireUnlock())return;if(!confirm("確定要清除今日紀錄嗎？"))return;let snap=await roomRef.once("value"),d=snap.val()||clone(defaultData),today=todayKey(),u={};Object.keys(d.records||{}).forEach(k=>{if(k===today){u[`records/${k}`]=null;u[`recordItems/${k}`]=null}});Object.keys(d.fitnessRecords||{}).forEach(k=>{if(d.fitnessRecords[k]?.date===today)u[`fitnessRecords/${k}`]=null});await roomRef.update(u)}
-    async function clearAll(){if(!requireUnlock())return;if(!confirm("確定要清除全部紀錄嗎？"))return;await roomRef.update({records:{},recordItems:{},fitnessRecords:{}})}
-
-    async function init(){let snap=await roomRef.once("value");if(!snap.exists()){let fresh=clone(defaultData);fresh.learningState.updatedAt=firebase.database.ServerValue.TIMESTAMP;fresh.learningState.updatedBy=CLIENT_ID;await roomRef.set(fresh)}}
-    db.ref(".info/serverTimeOffset").on("value",snap=>{serverOffset=snap.val()||0});
-    db.ref(".info/connected").on("value",snap=>updateCloudStatus(!!snap.val()));
-    roomRef.on("value",snap=>{let data=snap.val()||clone(defaultData);if(data.state&&!data.learningState){data.learningState=data.state}cloudData=data;render()},err=>{cloudDot.className="dot offline";cloudText.textContent="Firebase 讀取失敗，請檢查規則";console.error(err)});
-
-    unlockPinBtn.addEventListener("click",unlockPin);
-    lockPinBtn.addEventListener("click",lockPin);
-    pinInput.addEventListener("keydown",e=>{if(e.key==="Enter")unlockPin()});
-    startBtn.addEventListener("click",startOrResume);
-    pauseBtn.addEventListener("click",pauseTimer);
-    resetSessionBtn.addEventListener("click",resetSession);
-    restToggleBtn.addEventListener("click",toggleRest);
-    finishExerciseBtn.addEventListener("click",finishCurrentExercise);
-    finishSessionBtn.addEventListener("click",finishFitness);
-    testSoundBtn.addEventListener("click",()=>playAlarm("finish"));
-    forceSyncBtn.addEventListener("click",render);
-    clearTodayBtn.addEventListener("click",clearToday);
-    clearAllBtn.addEventListener("click",clearAll);
-
-    [targetInput,studyInput,breakInput,itemType,customItem,bodyPartSelect,exerciseSelect,customExerciseInput,fitnessRestInput].forEach(el=>{
-      el.addEventListener("input",writeSettings);
-      el.addEventListener("change",()=>{
-        if(el===itemType){
-          if(itemType.value==="健身"){
-            studySettings.classList.add("hidden");fitnessSettings.classList.remove("hidden");fitnessActions.classList.remove("hidden");
-          }else{
-            studySettings.classList.remove("hidden");fitnessSettings.classList.add("hidden");fitnessActions.classList.add("hidden");
-          }
-        }
-        if(el===bodyPartSelect){let temp=settings();temp.fitnessBodyPart=bodyPartSelect.value;renderExerciseOptions(temp)}
-        if(el===exerciseSelect)customExerciseInput.style.display=exerciseSelect.value==="自行輸入"?"block":"none";
-        writeSettings()
-      })
-    });
-
-    updatePinUI();
-    init();
-    localTick=setInterval(render,1000);
-  </script>
+/* init */
+$("globalPinInput").addEventListener("keydown",e=>{if(e.key==="Enter")unlockSuite()});
+renderHome();
+vnRender();
+</script>
 </body>
 </html>
