@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>Yu工具箱_三合一_V1.3</title>
+<title>Yu工具箱_三合一_V1.4</title>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
@@ -190,8 +190,7 @@ tr:last-child td{border-bottom:none}
   <div class="card homeCard">
     <div class="section">
       <div class="title">
-        <h1>Yu工具箱 V1.3</h1>
-        <p>第一頁選擇要做什麼：計時器、健身、越南文單字複習工具。密碼只在這裡輸入一次。</p>
+        <h1>Yu工具箱 V1.4</h1>
       </div>
       <div id="lockBox">
         <label>密碼 / PIN</label>
@@ -202,8 +201,7 @@ tr:last-child td{border-bottom:none}
         <div id="globalPinMsg" class="small"></div>
       </div>
       <div id="toolMenu" class="hide">
-        <div class="row" style="justify-content:space-between;margin-top:4px">
-          <div class="pill">已解鎖</div>
+        <div class="row" style="justify-content:flex-end;margin-top:4px">
           <button class="navBtn ghost" onclick="lockSuite()">鎖定</button>
         </div>
         <div class="toolGrid">
@@ -222,9 +220,6 @@ tr:last-child td{border-bottom:none}
             <div class="toolTitle">越南文單字複習</div>
             <div class="toolDesc">雲端同步新單字優先複習、錯題循環、每日複習紀錄。</div>
           </div>
-        </div>
-        <div class="small" style="margin-top:16px">
-          資料位置：計時器、健身、越南文單字都存在 Firebase 雲端；房間預設 main。健身保留 V1.1 的「先選部位 → 動作順序 → 計時紀錄」流程。
         </div>
       </div>
     </div>
@@ -399,7 +394,13 @@ tr:last-child td{border-bottom:none}
         <h2>已新增單字 <span class="pill">單字數：<b id="vnTotalCount">0</b></span></h2>
         <div id="vnWordList" class="wordListBox"></div>
         <hr>
-        <h2>每日複習紀錄</h2>
+        <div class="row" style="justify-content:space-between;align-items:center">
+          <h2>每日複習紀錄</h2>
+          <div class="row">
+            <button class="ghost" onclick="vnExportDailyDetail()">匯出詳細</button>
+            <button class="danger" onclick="vnClearDaily()">清空紀錄</button>
+          </div>
+        </div>
         <div id="vnDailyRecord" class="recordBox"></div>
         <div id="vnTodayHint" class="small"></div>
       </div>
@@ -618,7 +619,10 @@ function vnUpdateNote(i,v){if(vnWords[i]){vnWords[i].note=v;vnCloudSave({words:v
 function vnClearWords(){if(!confirm("確定清空全部單字嗎？"))return;vnWords=[];vnResetSession();vnSave()}
 function vnExportWords(){csvDownload(`越南文單字_${todayText().replaceAll("-","")}.csv`,[["越南文","中文","備註","是否新單字"],...vnWords.map(w=>[w.vi,w.zh,w.note||"",w.isNew?"新":"舊"])])}
 function vnRender(){vnLoad();$("vnTotalCount").textContent=vnWords.length;let box=$("vnWordList");box.innerHTML=vnWords.length?`<table><thead><tr><th style="width:44px">#</th><th>狀態</th><th>越南文</th><th>備註</th><th>中文</th><th style="width:74px">操作</th></tr></thead><tbody>${vnWords.map((w,i)=>{let isNew=w.isNew===true;return `<tr><td>${i+1}</td><td><span class="wordStatus ${isNew?"new":"old"}">${isNew?"新單字":"舊單字"}</span></td><td>${vnEsc(w.vi)}</td><td><input class="noteInput" value="${vnEsc(w.note||"")}" placeholder="手動填入備註" oninput="vnUpdateNote(${i},this.value)"></td><td>${vnEsc(w.zh)}</td><td><button class="danger deleteSmall" onclick="vnDeleteWord(${i})">刪除</button></td></tr>`}).join("")}</tbody></table>`:'<div class="empty">尚未新增單字</div>';vnRenderDaily()}
-function vnRenderDaily(){let d=vnDaily(),keys=Object.keys(d).sort().reverse();$("vnDailyRecord").innerHTML=keys.length?`<table><thead><tr><th>日期</th><th>複習次數</th><th>完成輪數</th><th>全對次數</th></tr></thead><tbody>${keys.map(k=>`<tr><td>${k}</td><td>${d[k].start||0}</td><td>${d[k].round||0}</td><td>${d[k].perfect||0}</td></tr>`).join("")}</tbody></table>`:'<div class="empty">尚無紀錄</div>';let t=d[todayText()]||{start:0,round:0,perfect:0};$("vnTodayHint").textContent=`今日：複習 ${t.start||0} 次｜完成 ${t.round||0} 輪｜全對 ${t.perfect||0} 次`}
+function vnDeleteDaily(encodedKey){let key=decodeURIComponent(encodedKey||"");if(!key)return;let d=vnDaily();if(!d[key])return;if(!confirm("確定刪除「"+key+"」的複習紀錄嗎？"))return;delete d[key];vnSaveDaily(d);vnRenderDaily();toast("已刪除複習紀錄")}
+function vnClearDaily(){if(!confirm("確定清空全部每日複習紀錄嗎？單字不會刪除。"))return;vnSaveDaily({});vnRenderDaily();toast("每日複習紀錄已清空")}
+function vnExportDailyDetail(){let d=vnDaily(),keys=Object.keys(d).sort();let dailyRows=keys.map(k=>({"日期":k,"複習次數":d[k]?.start||0,"完成輪數":d[k]?.round||0,"全對次數":d[k]?.perfect||0}));if(!dailyRows.length)dailyRows=[{"日期":"","複習次數":"","完成輪數":"","全對次數":""}];let wordRows=vnWords.map((w,i)=>({"#":i+1,"狀態":w.isNew?"新單字":"舊單字","越南文":w.vi||"","中文":w.zh||"","備註":w.note||"","建立時間":w.createdAt?new Date(w.createdAt).toLocaleString():""}));if(!wordRows.length)wordRows=[{"#":"","狀態":"","越南文":"","中文":"","備註":"","建立時間":""}];xlsxOrCsv(`越南文複習詳細_${todayText().replaceAll("-","")}.xlsx`,[{name:"每日複習紀錄",rows:dailyRows},{name:"單字清單",rows:wordRows}])}
+function vnRenderDaily(){let d=vnDaily(),keys=Object.keys(d).sort().reverse();$("vnDailyRecord").innerHTML=keys.length?`<table><thead><tr><th>日期</th><th>複習次數</th><th>完成輪數</th><th>全對次數</th><th style="width:74px">操作</th></tr></thead><tbody>${keys.map(k=>`<tr><td>${vnEsc(k)}</td><td>${d[k].start||0}</td><td>${d[k].round||0}</td><td>${d[k].perfect||0}</td><td><button class="danger deleteSmall" onclick="vnDeleteDaily('${encodeURIComponent(k)}')">刪除</button></td></tr>`).join("")}</tbody></table>`:'<div class="empty">尚無紀錄</div>';let t=d[todayText()]||{start:0,round:0,perfect:0};$("vnTodayHint").textContent=`今日：複習 ${t.start||0} 次｜完成 ${t.round||0} 輪｜全對 ${t.perfect||0} 次`}
 function vnShuffle(arr){let a=[...arr];for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 function vnResetSession(){vnQueue=[];vnWrongSet=new Set();vnLastIndex=null;vnRound=1;vnPhase="full";vnCurrent=null;vnCurrentIndex=null;vnAnswered=false}
 function vnBuildQueue(){let newIdx=vnWords.map((w,i)=>w.isNew?i:null).filter(i=>i!==null);if(newIdx.length){vnPhase="new";vnQueue=vnShuffle(newIdx);return}vnPhase="full";vnQueue=vnShuffle(vnWords.map((_,i)=>i))}
