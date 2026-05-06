@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>Yu工具箱_三合一_V2.3</title>
+<title>Yu工具箱_三合一_V2.4</title>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
@@ -191,7 +191,7 @@ tr:last-child td{border-bottom:none}
   <div class="card homeCard">
     <div class="section">
       <div class="title">
-        <h1>Yu工具箱 V2.3</h1>
+        <h1>Yu工具箱 V2.4</h1>
       </div>
       <div id="lockBox">
         <label>密碼 / PIN</label>
@@ -357,7 +357,7 @@ tr:last-child td{border-bottom:none}
       </div></section>
     </main>
   </div>
-  <div class="makerFooter">2026/05/06 Yu製作｜V2.3 發音逾時修正版</div>
+  <div class="makerFooter">2026/05/06 Yu製作｜V2.4 語音診斷版</div>
 </section>
 
 <!-- VOCAB -->
@@ -426,13 +426,17 @@ tr:last-child td{border-bottom:none}
         <button onclick="vnCheckAnswer()">確認答案</button>
         <button class="ghost" onclick="vnNextQuestion()">下一題</button>
         <button class="ghost" onclick="vnSpeakQuestion()">🔊 Google 發音</button>
+        <button class="ghost" onclick="vnSpeakFallback()">🔊 手機備用發音</button>
+        <button class="ghost" onclick="vnVoiceDiagnose()">語音診斷</button>
+        <button class="ghost" onclick="vnOpenGoogleTranslate()">開啟 Google 翻譯</button>
       </div>
       <div id="vnVoiceStatus" class="small"></div>
+      <div id="vnVoiceDiag" class="small hide" style="margin:10px auto 0;max-width:560px;text-align:left;border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:10px 12px;background:rgba(15,23,42,.72);line-height:1.7"></div>
       <div id="vnResult" class="result"></div>
       <div id="vnAnswerHint" class="answerHint"></div>
     </section>
   </div>
-  <div class="makerFooter">2026/05/06 Yu製作｜V2.3 發音逾時修正版</div>
+  <div class="makerFooter">2026/05/06 Yu製作｜V2.4 語音診斷版</div>
 </section>
 
 <script>
@@ -602,7 +606,7 @@ let vnWords=[],vnDailyData={},vocabCloudData=null,vocabCloudReady=false,vnAudio=
 function vnReadLocal(key,fallback){try{let raw=localStorage.getItem(key);return raw?JSON.parse(raw):fallback}catch(e){return fallback}}
 function vnLocalSeed(){return {words:vnReadLocal(VN_WORDS,[]),daily:vnReadLocal(VN_DAILY,{})}}
 function vnApplyData(data){data=data||{};let seed=vnLocalSeed();vnWords=Array.isArray(data.words)?data.words:(Array.isArray(seed.words)?seed.words:[]);vnDailyData=(data.daily&&typeof data.daily==="object")?data.daily:(seed.daily||{});localStorage.setItem(VN_WORDS,JSON.stringify(vnWords));localStorage.setItem(VN_DAILY,JSON.stringify(vnDailyData))}
-function vnCloudSave(patch){vocabCloudData={...(vocabCloudData||{}),...patch};try{localStorage.setItem(VN_WORDS,JSON.stringify(vnWords));localStorage.setItem(VN_DAILY,JSON.stringify(vnDailyData))}catch(e){}if(vocabRef){vocabRef.update({...patch,version:"suite-v2.3-vocab",updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>{console.error(e);setCloudStatus("vocab",false,"越南文雲端寫入失敗，請檢查 Firebase 規則")})}}
+function vnCloudSave(patch){vocabCloudData={...(vocabCloudData||{}),...patch};try{localStorage.setItem(VN_WORDS,JSON.stringify(vnWords));localStorage.setItem(VN_DAILY,JSON.stringify(vnDailyData))}catch(e){}if(vocabRef){vocabRef.update({...patch,version:"suite-v2.4-vocab",updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>{console.error(e);setCloudStatus("vocab",false,"越南文雲端寫入失敗，請檢查 Firebase 規則")})}}
 function vnLoad(){if(vocabCloudData){vnApplyData(vocabCloudData)}else{vnApplyData(vnLocalSeed())}}
 function vnSave(){vnCloudSave({words:vnWords});vnRender()}
 function vnDaily(){return {...(vnDailyData||{})}}
@@ -655,6 +659,8 @@ function vnNextQuestion(){
   $("vnAnswerInput").value="";
   $("vnResult").textContent="";
   $("vnAnswerHint").textContent="";
+  const diagEl=$("vnVoiceDiag");
+  if(diagEl){diagEl.classList.add("hide");diagEl.innerHTML="";}
   setTimeout(()=>$("vnAnswerInput").focus(),60);
 }
 function vnCheckAnswer(){if(!vnCurrent){vnNextQuestion();return}let mode=$("vnModeSelect").value,ans=vnNormalize($("vnAnswerInput").value),correct=mode==="viToZh"?vnCurrent.zh:vnCurrent.vi,ok=correct.split(/[\/／]/).map(vnNormalize).filter(Boolean).includes(ans);vnAnswered=true;if(ok){$("vnResult").innerHTML='<span class="ok">✅</span>';$("vnAnswerHint").textContent="答對了";$("vnQuestionNote").textContent=vnCurrent.note?"備註："+vnCurrent.note:"";vnNextQuestion()}else{if(mode==="viToZh"){$("vnQuestion").textContent=vnCurrent.vi;$("vnQuestion").classList.remove("questionHidden")}$("vnResult").innerHTML='<span class="bad">✗</span>';$("vnAnswerHint").textContent="正確答案："+correct;$("vnQuestionNote").textContent=vnCurrent.note?"備註："+vnCurrent.note:"";vnWrongSet.add(vnCurrentIndex)}}
@@ -684,37 +690,108 @@ function vnPickVietnameseVoice(){
   const femaleKeywords=/female|woman|nữ|nu|linh|mai|hoài|hoai|thảo|thao|trang|yen|yến|an|google/i;
   return viVoices.find(v=>femaleKeywords.test(v.name||"")) || viVoices[0];
 }
-function vnPlayBrowserTTS(text){
+function vnGoogleTranslateUrl(){
+  const text=vnGetVietnameseTextToSpeak();
+  if(!text)return "https://translate.google.com.tw/?hl=zh-TW&sl=vi&tl=zh-TW&op=translate";
+  return "https://translate.google.com.tw/?hl=zh-TW&sl=vi&tl=zh-TW&text="+encodeURIComponent(text)+"&op=translate";
+}
+function vnOpenGoogleTranslate(){
+  const text=vnGetVietnameseTextToSpeak();
+  if(!text){
+    alert("目前沒有可開啟的越南文單字");
+    return;
+  }
+  window.open(vnGoogleTranslateUrl(),"_blank","noopener,noreferrer");
+}
+function vnSetDiag(html){
+  const el=$("vnVoiceDiag");
+  if(!el)return;
+  el.classList.remove("hide");
+  el.innerHTML=html;
+}
+function vnVoiceDiagnose(){
+  const status=$("vnVoiceStatus");
+  if(status)status.textContent="正在檢查手機/瀏覽器語音...";
+  const run=function(){
+    const supportsAudio=!!window.Audio;
+    const supportsSpeech=('speechSynthesis' in window);
+    const voices=supportsSpeech?(window.speechSynthesis.getVoices()||[]):[];
+    const viVoices=voices.filter(v=>(v.lang||"").toLowerCase().includes("vi"));
+    const selected=vnPickVietnameseVoice();
+    const ua=(navigator.userAgent||"").replace(/[<>]/g,"");
+    const lines=[];
+    lines.push("語音診斷結果：");
+    lines.push("Audio 音檔播放支援："+(supportsAudio?"有":"沒有"));
+    lines.push("手機備用語音支援："+(supportsSpeech?"有":"沒有"));
+    lines.push("目前抓到語音數："+voices.length);
+    lines.push("越南文語音 vi-VN："+(viVoices.length?viVoices.length+" 個":"沒有抓到"));
+    if(selected)lines.push("目前會優先使用："+vnEsc(selected.name||"")+"（"+vnEsc(selected.lang||"")+"）");
+    if(viVoices.length){
+      lines.push("越南文語音清單："+viVoices.map(v=>vnEsc((v.name||"")+" / "+(v.lang||""))).join("、"));
+    }
+    lines.push("手機瀏覽器："+vnEsc(ua.slice(0,180)));
+    lines.push("建議：如果 Google 發音和手機備用都沒聲音，請按『開啟 Google 翻譯』，用 Google 翻譯頁面的喇叭播放。Android 可到系統的『文字轉語音輸出』確認是否安裝越南文語音；iPhone 建議用 Safari 測試。");
+    vnSetDiag(lines.join("<br>"));
+    if(status)status.textContent=viVoices.length?"診斷完成：有抓到越南文備用語音":"診斷完成：沒有抓到越南文備用語音";
+  };
+  try{
+    if('speechSynthesis' in window){
+      window.speechSynthesis.getVoices();
+      setTimeout(run,350);
+    }else{
+      run();
+    }
+  }catch(e){
+    run();
+  }
+}
+function vnPlayBrowserTTS(text, fromAuto){
   const status=$("vnVoiceStatus");
   if(!('speechSynthesis' in window)){
-    if(status)status.textContent="發音播放失敗，請重新按一次";
+    if(status)status.textContent="手機備用發音不支援，請按『開啟 Google 翻譯』";
     return;
   }
   try{
     window.speechSynthesis.cancel();
-
-    const speakNow=function(){
-      const utter=new SpeechSynthesisUtterance(text);
-      utter.lang="vi-VN";
-      utter.rate=0.9;
-      utter.pitch=1;
-      const voice=vnPickVietnameseVoice();
-      if(voice)utter.voice=voice;
-      utter.onstart=function(){if(status)status.textContent="發音播放中";};
-      utter.onend=function(){if(status)status.textContent="播放完成";};
-      utter.onerror=function(){if(status)status.textContent="發音播放失敗，請重新按一次";};
-      window.speechSynthesis.speak(utter);
-    };
-
-    const voices=window.speechSynthesis.getVoices()||[];
-    if(!voices.length){
-      setTimeout(speakNow,180);
-    }else{
-      speakNow();
-    }
+    let started=false;
+    let ended=false;
+    const utter=new SpeechSynthesisUtterance(text);
+    utter.lang="vi-VN";
+    utter.rate=0.9;
+    utter.pitch=1;
+    const voice=vnPickVietnameseVoice();
+    if(voice)utter.voice=voice;
+    utter.onstart=function(){started=true;if(status)status.textContent="發音播放中";};
+    utter.onend=function(){ended=true;if(status)status.textContent="播放完成";};
+    utter.onerror=function(){ended=true;if(status)status.textContent="手機備用發音沒有成功，請按『開啟 Google 翻譯』";};
+    if(status)status.textContent=fromAuto?"Google 沒成功，正在改用手機備用發音...":"正在播放手機備用發音...";
+    window.speechSynthesis.speak(utter);
+    // 手機 Chrome 有時需要 resume 才會真的出聲
+    let resumeCount=0;
+    const resumeTimer=setInterval(function(){
+      resumeCount++;
+      try{window.speechSynthesis.resume();}catch(e){}
+      if(ended||resumeCount>12)clearInterval(resumeTimer);
+    },250);
+    setTimeout(function(){
+      if(!started&&!ended){
+        try{window.speechSynthesis.cancel();}catch(e){}
+        if(status)status.textContent="手機備用發音沒有啟動，請按『語音診斷』或『開啟 Google 翻譯』";
+      }
+    },2600);
   }catch(e){
-    if(status)status.textContent="發音播放失敗，請重新按一次";
+    if(status)status.textContent="手機備用發音失敗，請按『開啟 Google 翻譯』";
   }
+}
+function vnSpeakFallback(){
+  const text=vnGetVietnameseTextToSpeak();
+  if(!text){
+    const status=$("vnVoiceStatus");
+    if(status)status.textContent="目前沒有可發音的單字";
+    return;
+  }
+  vnStopAudio();
+  vnPlayBrowserTTS(text,false);
 }
 function vnSpeakQuestion(){
   const text=vnGetVietnameseTextToSpeak();
@@ -725,7 +802,9 @@ function vnSpeakQuestion(){
   }
 
   vnStopAudio();
-  if(status)status.textContent="正在播放發音...";
+  const diagEl=$("vnVoiceDiag");
+  if(diagEl){diagEl.classList.add("hide");diagEl.innerHTML="";}
+  if(status)status.textContent="正在播放 Google 發音...";
 
   const q=encodeURIComponent(text);
   const urls=[
@@ -735,7 +814,8 @@ function vnSpeakQuestion(){
   ];
 
   let sourceIndex=0;
-  let done=false;
+  let finished=false;
+  let started=false;
   let timeoutId=null;
 
   function clearVoiceTimeout(){
@@ -744,60 +824,64 @@ function vnSpeakQuestion(){
       timeoutId=null;
     }
   }
-
-  function fallbackToBrowser(){
-    if(done)return;
-    done=true;
+  function markStarted(){
+    if(finished)return;
+    started=true;
     clearVoiceTimeout();
-    vnPlayBrowserTTS(text);
+    if(status)status.textContent="發音播放中";
   }
-
-  function tryNextGoogleSource(){
-    if(done)return;
+  function allGoogleFailed(){
+    if(finished)return;
+    finished=true;
     clearVoiceTimeout();
+    // 自動嘗試一次手機備用；如果手機也擋住，畫面會提示按診斷或開 Google 翻譯
+    vnPlayBrowserTTS(text,true);
+  }
+  function tryNextGoogleSource(){
+    if(finished)return;
+    clearVoiceTimeout();
+    started=false;
 
     if(sourceIndex>=urls.length){
-      fallbackToBrowser();
+      allGoogleFailed();
       return;
     }
 
     const url=urls[sourceIndex++];
-
     try{
-      vnAudio=new Audio();
+      vnAudio=new Audio(url);
       vnAudio.preload="auto";
       try{vnAudio.referrerPolicy="no-referrer";}catch(e){}
-      vnAudio.src=url;
 
       const googleFailed=function(){
-        if(done)return;
+        if(finished)return;
         tryNextGoogleSource();
       };
 
-      vnAudio.onplaying=function(){
-        if(done)return;
-        clearVoiceTimeout();
-        if(status)status.textContent="發音播放中";
+      vnAudio.onplay=markStarted;
+      vnAudio.onplaying=markStarted;
+      vnAudio.ontimeupdate=function(){
+        if(vnAudio&&vnAudio.currentTime>0)markStarted();
       };
-
       vnAudio.onended=function(){
-        if(done)return;
-        done=true;
+        if(finished)return;
+        finished=true;
         clearVoiceTimeout();
         if(status)status.textContent="播放完成";
       };
-
       vnAudio.onerror=googleFailed;
       vnAudio.onabort=googleFailed;
       vnAudio.onstalled=googleFailed;
+      vnAudio.onwaiting=function(){
+        if(status&&!started)status.textContent="Google 發音載入中...";
+      };
 
       timeoutId=setTimeout(function(){
-        if(done)return;
-        const hasStarted=vnAudio && !vnAudio.paused && vnAudio.currentTime>0;
-        if(!hasStarted){
+        if(finished)return;
+        if(!started){
           tryNextGoogleSource();
         }
-      },2200);
+      },2600);
 
       const playPromise=vnAudio.play();
       if(playPromise!==undefined){
@@ -820,7 +904,7 @@ if('speechSynthesis' in window){
   }catch(e){}
 }
 
-function initVocabCloud(){vocabRef.on("value",snap=>{let data=snap.val();if(data&&(data.words||data.daily)){vocabCloudData=data;vocabCloudReady=true;vnApplyData(data);vnRender()}else{let seed=vnLocalSeed();vocabCloudData={words:seed.words,daily:seed.daily,version:"suite-v2.3-vocab"};vocabCloudReady=true;vocabRef.set({...vocabCloudData,updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>{console.error(e);setCloudStatus("vocab",false,"越南文雲端初始化失敗，請檢查 Firebase 規則")});vnApplyData(vocabCloudData);vnRender()}},err=>{console.error(err);setCloudStatus("vocab",false,"越南文 Firebase 讀取失敗")})}
+function initVocabCloud(){vocabRef.on("value",snap=>{let data=snap.val();if(data&&(data.words||data.daily)){vocabCloudData=data;vocabCloudReady=true;vnApplyData(data);vnRender()}else{let seed=vnLocalSeed();vocabCloudData={words:seed.words,daily:seed.daily,version:"suite-v2.4-vocab"};vocabCloudReady=true;vocabRef.set({...vocabCloudData,updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>{console.error(e);setCloudStatus("vocab",false,"越南文雲端初始化失敗，請檢查 Firebase 規則")});vnApplyData(vocabCloudData);vnRender()}},err=>{console.error(err);setCloudStatus("vocab",false,"越南文 Firebase 讀取失敗")})}
 
 
 /* init */
