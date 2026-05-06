@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>Yu工具箱_三合一_V2.1</title>
+<title>Yu工具箱_三合一_V2.2</title>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
@@ -191,7 +191,7 @@ tr:last-child td{border-bottom:none}
   <div class="card homeCard">
     <div class="section">
       <div class="title">
-        <h1>Yu工具箱 V2.1</h1>
+        <h1>Yu工具箱 V2.2</h1>
       </div>
       <div id="lockBox">
         <label>密碼 / PIN</label>
@@ -357,7 +357,7 @@ tr:last-child td{border-bottom:none}
       </div></section>
     </main>
   </div>
-  <div class="makerFooter">2026/05/06 Yu製作｜V2.1 Google發音重構版</div>
+  <div class="makerFooter">2026/05/06 Yu製作｜V2.2 發音回復V16邏輯版</div>
 </section>
 
 <!-- VOCAB -->
@@ -432,7 +432,7 @@ tr:last-child td{border-bottom:none}
       <div id="vnAnswerHint" class="answerHint"></div>
     </section>
   </div>
-  <div class="makerFooter">2026/05/06 Yu製作｜V2.1 Google發音重構版</div>
+  <div class="makerFooter">2026/05/06 Yu製作｜V2.2 發音回復V16邏輯版</div>
 </section>
 
 <script>
@@ -602,7 +602,7 @@ let vnWords=[],vnDailyData={},vocabCloudData=null,vocabCloudReady=false,vnAudio=
 function vnReadLocal(key,fallback){try{let raw=localStorage.getItem(key);return raw?JSON.parse(raw):fallback}catch(e){return fallback}}
 function vnLocalSeed(){return {words:vnReadLocal(VN_WORDS,[]),daily:vnReadLocal(VN_DAILY,{})}}
 function vnApplyData(data){data=data||{};let seed=vnLocalSeed();vnWords=Array.isArray(data.words)?data.words:(Array.isArray(seed.words)?seed.words:[]);vnDailyData=(data.daily&&typeof data.daily==="object")?data.daily:(seed.daily||{});localStorage.setItem(VN_WORDS,JSON.stringify(vnWords));localStorage.setItem(VN_DAILY,JSON.stringify(vnDailyData))}
-function vnCloudSave(patch){vocabCloudData={...(vocabCloudData||{}),...patch};try{localStorage.setItem(VN_WORDS,JSON.stringify(vnWords));localStorage.setItem(VN_DAILY,JSON.stringify(vnDailyData))}catch(e){}if(vocabRef){vocabRef.update({...patch,version:"suite-v2.1-vocab",updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>{console.error(e);setCloudStatus("vocab",false,"越南文雲端寫入失敗，請檢查 Firebase 規則")})}}
+function vnCloudSave(patch){vocabCloudData={...(vocabCloudData||{}),...patch};try{localStorage.setItem(VN_WORDS,JSON.stringify(vnWords));localStorage.setItem(VN_DAILY,JSON.stringify(vnDailyData))}catch(e){}if(vocabRef){vocabRef.update({...patch,version:"suite-v2.2-vocab",updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>{console.error(e);setCloudStatus("vocab",false,"越南文雲端寫入失敗，請檢查 Firebase 規則")})}}
 function vnLoad(){if(vocabCloudData){vnApplyData(vocabCloudData)}else{vnApplyData(vnLocalSeed())}}
 function vnSave(){vnCloudSave({words:vnWords});vnRender()}
 function vnDaily(){return {...(vnDailyData||{})}}
@@ -666,66 +666,88 @@ function vnStopAudio(){
       vnAudio=null;
     }
   }catch(e){}
-}
-function vnGoogleTtsUrl(text,domain){
-  return domain + "/translate_tts?ie=UTF-8&tl=vi&client=tw-ob&q=" + encodeURIComponent(text || "");
-}
-function vnPlayGoogleAudio(url){
-  return new Promise((resolve,reject)=>{
-    let settled=false;
-    const status=$("vnVoiceStatus");
-    const audio=new Audio(url);
-    vnAudio=audio;
-    audio.preload="auto";
-    const ok=()=>{
-      if(settled)return;
-      settled=true;
-      resolve();
-    };
-    const fail=()=>{
-      if(settled)return;
-      settled=true;
-      reject(new Error("Google TTS failed"));
-    };
-    audio.onerror=fail;
-    audio.onabort=fail;
-    audio.onended=()=>{if(status)status.textContent="播放完成";};
-    try{
-      const p=audio.play();
-      if(p&&typeof p.then==="function"){
-        p.then(ok).catch(fail);
-      }else{
-        setTimeout(ok,120);
-      }
-    }catch(e){
-      fail();
+  try{
+    if('speechSynthesis' in window){
+      window.speechSynthesis.cancel();
     }
-  });
+  }catch(e){}
 }
-async function vnSpeakQuestion(){
-  if(!vnCurrent)return;
-  const text=vnCurrent.vi||"";
+function vnGetVietnameseTextToSpeak(){
+  if(!vnCurrent)return "";
+  return vnCurrent.vi||"";
+}
+function vnPickVietnameseVoice(){
+  if(!('speechSynthesis' in window))return null;
+  const voices=window.speechSynthesis.getVoices()||[];
+  const viVoices=voices.filter(v=>(v.lang||"").toLowerCase().includes("vi"));
+  if(!viVoices.length)return null;
+  const femaleKeywords=/female|woman|nữ|nu|linh|mai|hoài|hoai|thảo|thao|trang|yen|yến|an|google/i;
+  return viVoices.find(v=>femaleKeywords.test(v.name||"")) || viVoices[0];
+}
+function vnPlayBrowserTTS(text){
   const status=$("vnVoiceStatus");
-  if(!text){if(status)status.textContent="目前沒有可發音的單字";return;}
-  vnStopAudio();
-  if(status)status.textContent="正在播放 Google 發音...";
-  const urls=[
-    vnGoogleTtsUrl(text,"https://translate.google.com"),
-    vnGoogleTtsUrl(text,"https://translate.google.com.tw")
-  ];
-  for(const url of urls){
-    try{
-      await vnPlayGoogleAudio(url);
-      if(status)status.textContent="Google 發音播放中";
-      return;
-    }catch(e){
-      try{if(vnAudio){vnAudio.pause();vnAudio=null;}}catch(_e){}
-    }
+  if(!('speechSynthesis' in window)){
+    if(status)status.textContent="發音播放失敗，請重新按一次";
+    return;
   }
-  if(status)status.textContent="Google 發音沒有成功，請重新按一次 🔊 Google 發音";
+  try{
+    window.speechSynthesis.cancel();
+    const utter=new SpeechSynthesisUtterance(text);
+    utter.lang="vi-VN";
+    utter.rate=0.9;
+    utter.pitch=1;
+    const voice=vnPickVietnameseVoice();
+    if(voice)utter.voice=voice;
+    utter.onstart=function(){if(status)status.textContent="發音播放中";};
+    utter.onend=function(){if(status)status.textContent="播放完成";};
+    utter.onerror=function(){if(status)status.textContent="發音播放失敗，請重新按一次";};
+    window.speechSynthesis.speak(utter);
+  }catch(e){
+    if(status)status.textContent="發音播放失敗，請重新按一次";
+  }
+}
+function vnSpeakQuestion(){
+  const text=vnGetVietnameseTextToSpeak();
+  const status=$("vnVoiceStatus");
+  if(!text){
+    if(status)status.textContent="目前沒有可發音的單字";
+    return;
+  }
+  vnStopAudio();
+  if(status)status.textContent="正在播放發音...";
+  const url="https://translate.google.com/translate_tts?ie=UTF-8&tl=vi&client=tw-ob&q="+encodeURIComponent(text);
+  try{
+    vnAudio=new Audio(url);
+    let fallbackUsed=false;
+    const useFallback=function(){
+      if(fallbackUsed)return;
+      fallbackUsed=true;
+      vnPlayBrowserTTS(text);
+    };
+    vnAudio.onerror=useFallback;
+    vnAudio.onabort=useFallback;
+    vnAudio.onended=function(){if(status)status.textContent="播放完成";};
+    const playPromise=vnAudio.play();
+    if(playPromise!==undefined){
+      playPromise.then(function(){
+        if(status)status.textContent="發音播放中";
+      }).catch(function(){
+        useFallback();
+      });
+    }
+  }catch(e){
+    vnPlayBrowserTTS(text);
+  }
 }
 
-function initVocabCloud(){vocabRef.on("value",snap=>{let data=snap.val();if(data&&(data.words||data.daily)){vocabCloudData=data;vocabCloudReady=true;vnApplyData(data);vnRender()}else{let seed=vnLocalSeed();vocabCloudData={words:seed.words,daily:seed.daily,version:"suite-v2.1-vocab"};vocabCloudReady=true;vocabRef.set({...vocabCloudData,updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>{console.error(e);setCloudStatus("vocab",false,"越南文雲端初始化失敗，請檢查 Firebase 規則")});vnApplyData(vocabCloudData);vnRender()}},err=>{console.error(err);setCloudStatus("vocab",false,"越南文 Firebase 讀取失敗")})}
+if('speechSynthesis' in window){
+  try{
+    window.speechSynthesis.getVoices();
+    window.speechSynthesis.onvoiceschanged=function(){window.speechSynthesis.getVoices();};
+  }catch(e){}
+}
+
+function initVocabCloud(){vocabRef.on("value",snap=>{let data=snap.val();if(data&&(data.words||data.daily)){vocabCloudData=data;vocabCloudReady=true;vnApplyData(data);vnRender()}else{let seed=vnLocalSeed();vocabCloudData={words:seed.words,daily:seed.daily,version:"suite-v2.2-vocab"};vocabCloudReady=true;vocabRef.set({...vocabCloudData,updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>{console.error(e);setCloudStatus("vocab",false,"越南文雲端初始化失敗，請檢查 Firebase 規則")});vnApplyData(vocabCloudData);vnRender()}},err=>{console.error(err);setCloudStatus("vocab",false,"越南文 Firebase 讀取失敗")})}
 
 
 /* init */
@@ -737,3 +759,4 @@ vnRender();
 </script>
 </body>
 </html>
+
