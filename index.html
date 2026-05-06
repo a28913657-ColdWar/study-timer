@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>Yu工具箱_三合一_V3.2</title>
+<title>Yu工具箱_三合一_V3.3</title>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
@@ -176,6 +176,11 @@ tr:last-child td{border-bottom:none}
 #vocabView button.danger{background:#3a2028;color:#ffd8df;border:1px solid #6b2c39;}
 #vocabView .vocabStartBtn{font-size:18px;padding:14px 26px;min-width:180px;}
 #vocabView .pill{background:#151925;border:1px solid #343b4d;color:#a9acb8;}
+#vocabView .sectionHead{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px;}
+#vocabView .sectionHead h2{margin:0;}
+#vocabView .foldBtn{margin:0;padding:8px 13px;font-size:13px;background:#2d3345!important;color:#f5f1eb!important;border:1px solid #343b4d!important;}
+#vocabView .sectionBody.collapsed{display:none;}
+#vocabView .vocabRecordActions{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;}
 #vocabView .wordListBox{max-height:360px;overflow:auto;border:1px solid #343b4d;border-radius:18px;background:#121621;margin-top:10px;}
 #vocabView .recordBox{max-height:260px;overflow:auto;border:1px solid #343b4d;border-radius:18px;background:#121621;margin-top:10px;}
 #vocabView .wordListBox table,#vocabView .recordBox table{font-size:15px;background:#121621;border-collapse:collapse;}
@@ -204,7 +209,7 @@ tr:last-child td{border-bottom:none}
   <div class="card homeCard">
     <div class="section">
       <div class="title">
-        <h1>Yu工具箱 V3.2</h1>
+        <h1>Yu工具箱 V3.3</h1>
       </div>
       <div id="lockBox">
         <label>密碼 / PIN</label>
@@ -390,34 +395,49 @@ tr:last-child td{border-bottom:none}
     </section>
     <section class="card">
       <div class="section">
-        <h2>新增單字</h2>
-        <div class="vnRow">
-          <div><label>越南文</label><input id="vnViInput" placeholder="例如：Không biết"></div>
-          <div><label>中文意思</label><input id="vnZhInput" placeholder="例如：不知道"></div>
-          <div><label>備註</label><input id="vnNoteInput" placeholder="例如：không = 不"></div>
+        <div class="sectionHead">
+          <h2>新增單字</h2>
+          <button class="foldBtn" onclick="toggleSection('vnAddSection', this)">收起</button>
         </div>
-        <button onclick="vnAddOne()">新增單字</button>
-        <button class="ghost" onclick="vnFillDemo()">加入示範</button>
-        <hr>
-        <label>批量貼上，一行一組：越南文 中文意思</label>
-        <textarea id="vnBulkInput" placeholder="Không biết 不知道&#10;Tôi không hiểu 我不懂&#10;Cái này bao nhiêu tiền 這個多少錢"></textarea>
-        <button onclick="vnAddBulk()">批量新增</button>
-        <button class="ghost" onclick="vnExportWords()">匯出備份</button>
-        <button class="danger" onclick="vnClearWords()">清空單字</button>
-        <div class="small">可用「/」設定多個正確答案。答案判斷會忽略大小寫、空格、標點符號；備註會在答題後才顯示。</div>
-        <hr>
-        <h2>已新增單字 <span class="pill">單字數：<b id="vnTotalCount">0</b></span></h2>
-        <div id="vnWordList" class="wordListBox"></div>
-        <hr>
-        <div class="row" style="justify-content:space-between;align-items:center">
-          <h2>每日複習紀錄</h2>
-          <div class="row">
-            <button class="ghost" onclick="vnExportDailyDetail()">匯出詳細</button>
-            <button class="danger" onclick="vnClearDaily()">清空紀錄</button>
+        <div id="vnAddSection" class="sectionBody">
+          <div class="vnRow">
+            <div><label>越南文</label><input id="vnViInput" placeholder="例如：Không biết"></div>
+            <div><label>中文意思</label><input id="vnZhInput" placeholder="例如：不知道"></div>
+            <div><label>備註</label><input id="vnNoteInput" placeholder="例如：không = 不"></div>
           </div>
+          <button onclick="vnAddOne()">新增單字</button>
+          <button class="ghost" onclick="vnFillDemo()">加入示範</button>
+          <hr>
+          <label>批量貼上，一行一組：越南文 中文意思</label>
+          <textarea id="vnBulkInput" placeholder="Không biết 不知道&#10;Tôi không hiểu 我不懂&#10;Cái này bao nhiêu tiền 這個多少錢"></textarea>
+          <button onclick="vnAddBulk()">批量新增</button>
+          <button class="ghost" onclick="vnExportWords()">匯出備份</button>
+          <button class="danger" onclick="vnClearWords()">清空單字</button>
+          <div class="small">可用「/」設定多個正確答案。答案判斷會忽略大小寫、空格、標點符號；備註會在答題後才顯示。</div>
         </div>
-        <div id="vnDailyRecord" class="recordBox"></div>
-        <div id="vnTodayHint" class="small"></div>
+        <hr>
+        <div class="sectionHead">
+          <h2>已新增單字 <span class="pill">單字數：<b id="vnTotalCount">0</b></span></h2>
+          <button class="foldBtn" onclick="toggleSection('vnWordListSection', this)">收起</button>
+        </div>
+        <div id="vnWordListSection" class="sectionBody">
+          <div id="vnWordList" class="wordListBox"></div>
+        </div>
+        <hr>
+        <div class="sectionHead">
+          <h2>每日複習紀錄</h2>
+          <button class="foldBtn" onclick="toggleSection('vnDailyRecordSection', this)">收起</button>
+        </div>
+        <div id="vnDailyRecordSection" class="sectionBody">
+          <div class="vocabRecordActions">
+            <div id="vnTodayHint" class="small"></div>
+            <div class="row">
+              <button class="ghost" onclick="vnExportDailyDetail()">匯出詳細</button>
+              <button class="danger" onclick="vnClearDaily()">清空紀錄</button>
+            </div>
+          </div>
+          <div id="vnDailyRecord" class="recordBox"></div>
+        </div>
       </div>
     </section>
   </div>
@@ -471,6 +491,7 @@ tr:last-child td{border-bottom:none}
 const SUITE_PIN="0825";
 function $(id){return document.getElementById(id)}
 function toast(msg){const el=$("toast"); el.textContent=msg; el.classList.add("show"); setTimeout(()=>el.classList.remove("show"),1600)}
+function toggleSection(sectionId,btn){const section=$(sectionId);if(!section)return;section.classList.toggle("collapsed");if(btn)btn.textContent=section.classList.contains("collapsed")?"展開":"收起"}
 function isUnlocked(){return sessionStorage.getItem("yu_suite_unlocked")==="1"}
 function unlockSuite(){const v=$("globalPinInput").value; if(v===SUITE_PIN){sessionStorage.setItem("yu_suite_unlocked","1");$("globalPinInput").value="";renderHome()}else{$("globalPinMsg").textContent="PIN 錯誤，請再試一次。";$("globalPinInput").select()}}
 function lockSuite(){sessionStorage.removeItem("yu_suite_unlocked");renderHome()}
@@ -506,7 +527,7 @@ function setAllCloudStatus(ok,text){
   setCloudStatus("fitness",ok,text);
   setCloudStatus("vocab",ok,text);
 }
-let timerData=null,timerOffset=0,timerAudio=null,timerWrite=null;
+let timerData=null,timerOffset=0,timerAudio=null,timerWrite=null,timerFinishPending=false;
 const CIRC=2*Math.PI*100;
 $("timerCircle").style.strokeDasharray=CIRC;
 function timerDefault(){return{version:"suite-v1-timer",settings:{targetStudyMinutes:30,studyMinutes:10,breakMinutes:5},state:{status:"idle",currentPhase:"study",startedAt:null,baseElapsedSeconds:0,baseCompletedStudySeconds:0,remainingPhaseSeconds:600,dayBaseDate:"",dayBaseSeconds:0,updatedAt:0,updatedBy:""},records:{}}}
@@ -516,7 +537,7 @@ function timerSettings(d=timerData){let s=d?.settings||timerDefault().settings;r
 function timerState(d=timerData){return d?.state||d?.learningState||timerDefault().state}
 function timerCompute(d=timerData,t=timerNow()){if(!d)d=timerDefault();let s=timerSettings(d),st=timerState(d),status=st.status||"idle",target=s.targetStudyMinutes*60,study=s.studyMinutes*60,br=s.breakMinutes*60,elapsed=Math.max(0,st.baseElapsedSeconds||0);if(status==="running"&&st.startedAt)elapsed+=Math.max(0,Math.floor((t-st.startedAt)/1000));if(status==="idle")return{status,effectiveElapsed:0,completedStudy:0,target,currentPhase:"study",remainingPhase:Math.min(study,target),finished:false,percent:0};if(status==="paused"){let c=Math.min(target,st.baseCompletedStudySeconds||0);return{status,effectiveElapsed:elapsed,completedStudy:c,target,currentPhase:st.currentPhase||"study",remainingPhase:Math.max(0,st.remainingPhaseSeconds||0),finished:false,percent:target?Math.min(100,c/target*100):0}}if(status==="finished")return{status,effectiveElapsed:elapsed,completedStudy:target,target,currentPhase:"study",remainingPhase:0,finished:true,percent:100};let rem=elapsed,completed=0,phase="study",remaining=Math.min(study,target),finished=false;while(true){let sr=Math.min(study,target-completed);if(rem<sr){phase="study";completed+=rem;remaining=sr-rem;break}rem-=sr;completed+=sr;if(completed>=target){phase="study";remaining=0;finished=true;break}if(rem<br){phase="break";remaining=br-rem;break}rem-=br}completed=Math.min(target,Math.max(0,Math.floor(completed)));return{status,effectiveElapsed:elapsed,completedStudy:completed,target,currentPhase:phase,remainingPhase:Math.max(0,Math.ceil(remaining)),finished,percent:target?Math.min(100,completed/target*100):0}}
 function timerTodayTotal(d=timerData){if(!d)return 0;let today=timerToday(),base=(d.records||{})[today]||0,st=timerState(d),c=timerCompute(d);if(["running","paused","finished"].includes(st.status)&&st.dayBaseDate===today)return Math.max(base,(st.dayBaseSeconds||0)+c.completedStudy);return base}
-function timerRender(){if(!timerData)return;let s=timerSettings(timerData),st=timerState(timerData),c=timerCompute(timerData),status=st.status||"idle";$("timerTarget").value=s.targetStudyMinutes;$("timerStudy").value=s.studyMinutes;$("timerBreak").value=s.breakMinutes;$("timerTodayDate").textContent=timerToday();$("timerTodayTotal").textContent=fmtLong(timerTodayTotal(timerData));$("timerTime").textContent=fmt(c.remainingPhase);$("timerPercent").textContent=`${Math.round(c.percent)}%`;$("timerCircle").style.strokeDashoffset=CIRC*(1-c.percent/100);$("timerTotalText").textContent=`本次已學習 ${Math.floor(c.completedStudy/60)} 分鐘 / 目標 ${Math.floor(c.target/60)} 分鐘`;const phase=$("timerPhase");if(status==="idle"){phase.textContent="尚未開始";$("timerStartBtn").textContent="開始";$("timerStartBtn").disabled=false;$("timerPauseBtn").disabled=true;timerLockInputs(false)}else if(status==="running"){phase.textContent=c.currentPhase==="study"?"學習中":"休息中";$("timerStartBtn").disabled=true;$("timerPauseBtn").disabled=false;timerLockInputs(true)}else if(status==="paused"){phase.textContent=`已暫停：${c.currentPhase==="study"?"學習中":"休息中"}`;$("timerStartBtn").textContent="繼續";$("timerStartBtn").disabled=false;$("timerPauseBtn").disabled=true;timerLockInputs(true)}else{phase.textContent="完成！";$("timerStartBtn").textContent="重新開始";$("timerStartBtn").disabled=false;$("timerPauseBtn").disabled=true;timerLockInputs(false)}timerRenderRecords();if(status==="running"&&c.finished)timerFinish(false)}
+function timerRender(){if(!timerData)return;let s=timerSettings(timerData),st=timerState(timerData),c=timerCompute(timerData),status=st.status||"idle";$("timerTarget").value=s.targetStudyMinutes;$("timerStudy").value=s.studyMinutes;$("timerBreak").value=s.breakMinutes;$("timerTodayDate").textContent=timerToday();$("timerTodayTotal").textContent=fmtLong(timerTodayTotal(timerData));$("timerTime").textContent=fmt(c.remainingPhase);$("timerPercent").textContent=`${Math.round(c.percent)}%`;$("timerCircle").style.strokeDashoffset=CIRC*(1-c.percent/100);$("timerTotalText").textContent=`本次已學習 ${Math.floor(c.completedStudy/60)} 分鐘 / 目標 ${Math.floor(c.target/60)} 分鐘`;const phase=$("timerPhase");if(status==="idle"){phase.textContent="尚未開始";$("timerStartBtn").textContent="開始";$("timerStartBtn").disabled=false;$("timerPauseBtn").disabled=true;timerLockInputs(false)}else if(status==="running"){phase.textContent=c.currentPhase==="study"?"學習中":"休息中";$("timerStartBtn").disabled=true;$("timerPauseBtn").disabled=false;timerLockInputs(true)}else if(status==="paused"){phase.textContent=`已暫停：${c.currentPhase==="study"?"學習中":"休息中"}`;$("timerStartBtn").textContent="繼續";$("timerStartBtn").disabled=false;$("timerPauseBtn").disabled=true;timerLockInputs(true)}else{phase.textContent="完成！";$("timerStartBtn").textContent="重新開始";$("timerStartBtn").disabled=false;$("timerPauseBtn").disabled=true;timerLockInputs(false)}timerRenderRecords();if(status!=="running"){timerFinishPending=false}else if(c.finished&&!timerFinishPending){timerFinishPending=true;timerFinish(false).catch(e=>{console.error(e);timerFinishPending=false})}}
 function timerLockInputs(lock){["timerTarget","timerStudy","timerBreak"].forEach(id=>$(id).disabled=lock)}
 function timerRenderRecords(){let r=timerData?.records||{},keys=Object.keys(r).sort().reverse();$("timerRecordBody").innerHTML=keys.length?keys.map(k=>`<tr><td>${k}</td><td>${fmtRead(r[k]||0)}</td></tr>`).join(""):'<tr><td colspan="2">尚無紀錄</td></tr>'}
 function timerRecordUpdates(d,c){let st=timerState(d),day=st.dayBaseDate||timerToday(),base=st.dayBaseSeconds||0,u={};u[`records/${day}`]=base+(c.completedStudy||0);return u}
@@ -534,6 +555,7 @@ function timerPlayAlarm(){try{if(!timerAudio){const AC=window.AudioContext||wind
 db.ref(".info/serverTimeOffset").on("value",s=>timerOffset=s.val()||0);
 db.ref(".info/connected").on("value",s=>{let ok=!!s.val();setAllCloudStatus(ok,ok?`雲端已連線｜房間：${ROOM_ID}`:"雲端未連線")});
 roomRef.on("value",s=>{timerData=s.val()||timerDefault();timerRender()},err=>{$("timerCloudDot").className="dot offline";$("timerCloudText").textContent="Firebase 讀取失敗，請檢查規則";console.error(err)});
+setInterval(()=>{if(timerData&&timerState(timerData).status==="running")timerRender()},500);
 roomRef.once("value").then(s=>{if(!s.exists()){let d=timerDefault();d.state.updatedAt=firebase.database.ServerValue.TIMESTAMP;roomRef.set(d)}});
 
 /* ===== FITNESS ===== */
@@ -668,7 +690,7 @@ function vnEffectiveRate(){
   return vnSettings.rateEnabled ? vnClampRate(vnSettings.rate) : 1;
 }
 function vnApplyData(data){data=data||{};let seed=vnLocalSeed();vnWords=Array.isArray(data.words)?data.words:(Array.isArray(seed.words)?seed.words:[]);vnDailyData=(data.daily&&typeof data.daily==="object")?data.daily:(seed.daily||{});vnSettings=vnSanitizeSettings(data.settings||vnSettings||VN_DEFAULT_SETTINGS);localStorage.setItem(VN_WORDS,JSON.stringify(vnWords));localStorage.setItem(VN_DAILY,JSON.stringify(vnDailyData));vnApplyVoiceSettingsToUI()}
-function vnCloudSave(patch){vocabCloudData={...(vocabCloudData||{}),...patch};try{localStorage.setItem(VN_WORDS,JSON.stringify(vnWords));localStorage.setItem(VN_DAILY,JSON.stringify(vnDailyData))}catch(e){}if(vocabRef){vocabRef.update({...patch,version:"suite-v3.2-vocab",updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>{console.error(e);setCloudStatus("vocab",false,"越南文雲端寫入失敗，請檢查 Firebase 規則")})}}
+function vnCloudSave(patch){vocabCloudData={...(vocabCloudData||{}),...patch};try{localStorage.setItem(VN_WORDS,JSON.stringify(vnWords));localStorage.setItem(VN_DAILY,JSON.stringify(vnDailyData))}catch(e){}if(vocabRef){vocabRef.update({...patch,version:"suite-v3.3-vocab",updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>{console.error(e);setCloudStatus("vocab",false,"越南文雲端寫入失敗，請檢查 Firebase 規則")})}}
 function vnVoiceKey(v,i){return v.voiceURI||v.name||("voice"+i)}
 function vnApplyVoiceSettingsToUI(){
   const auto=$("vnAutoSpeakCheck"),rateEnabled=$("vnRateEnabledCheck"),rateDisplay=$("vnRateDisplay"),sourceDisplay=$("vnVoiceSourceDisplay");
@@ -1015,7 +1037,7 @@ if('speechSynthesis' in window){
   }catch(e){}
 }
 
-function initVocabCloud(){vocabRef.on("value",snap=>{let data=snap.val();if(data&&(data.words||data.daily||data.settings)){vocabCloudData=data;vocabCloudReady=true;vnApplyData(data);vnRender()}else{let seed=vnLocalSeed();vocabCloudData={words:seed.words,daily:seed.daily,settings:vnSettings,version:"suite-v3.2-vocab"};vocabCloudReady=true;vocabRef.set({...vocabCloudData,updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>{console.error(e);setCloudStatus("vocab",false,"越南文雲端初始化失敗，請檢查 Firebase 規則")});vnApplyData(vocabCloudData);vnRender()}},err=>{console.error(err);setCloudStatus("vocab",false,"越南文 Firebase 讀取失敗")})}
+function initVocabCloud(){vocabRef.on("value",snap=>{let data=snap.val();if(data&&(data.words||data.daily||data.settings)){vocabCloudData=data;vocabCloudReady=true;vnApplyData(data);vnRender()}else{let seed=vnLocalSeed();vocabCloudData={words:seed.words,daily:seed.daily,settings:vnSettings,version:"suite-v3.3-vocab"};vocabCloudReady=true;vocabRef.set({...vocabCloudData,updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>{console.error(e);setCloudStatus("vocab",false,"越南文雲端初始化失敗，請檢查 Firebase 規則")});vnApplyData(vocabCloudData);vnRender()}},err=>{console.error(err);setCloudStatus("vocab",false,"越南文 Firebase 讀取失敗")})}
 
 
 /* init */
