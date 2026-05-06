@@ -204,7 +204,7 @@ tr:last-child td{border-bottom:none}
   <div class="card homeCard">
     <div class="section">
       <div class="title">
-        <h1>Yu工具箱 V2.8</h1>
+        <h1>Yu工具箱 V2.9</h1>
       </div>
       <div id="lockBox">
         <label>密碼 / PIN</label>
@@ -346,8 +346,6 @@ tr:last-child td{border-bottom:none}
           </div>
           <div class="row" style="margin-top:12px">
             <button class="ghost" onclick="setRestTarget(60)">休 1:00</button>
-            <button class="ghost" onclick="setRestTarget(90)">休 1:30</button>
-            <button class="ghost" onclick="setRestTarget(120)">休 2:00</button>
             <button class="ghost" onclick="adjustRestTarget(30)">+30秒</button>
             <button class="ghost" onclick="adjustRestTarget(-30)">-30秒</button>
           </div>
@@ -355,7 +353,6 @@ tr:last-child td{border-bottom:none}
             <button class="primary" id="startMoveBtn" onclick="startMove()">開始本組動作</button>
             <button class="good" id="finishMoveBtn" onclick="finishMove()">本組做完 → 開始休息</button>
             <button class="warn" id="finishRestBtn" onclick="finishRest()">休息完成 → 下一組</button>
-            <button class="ghost" id="skipRestBtn" onclick="skipRest()">不休息，下一組</button>
           </div>
           <div class="row" style="margin-top:12px">
             <button class="ghost" id="completeExerciseBtn" onclick="completeExercise()">完成/跳過此動作</button>
@@ -618,7 +615,7 @@ function fitAutoNextExercise(){let w=getWorkout();if(!w)return;let next=fitState
 function completeExercise(){let ex=getExercise();if(!ex)return;if(fitState.status==="moving"&&!confirm("目前動作計時中，確定要完成/跳過此動作？"))return;if(fitState.status==="resting"&&fitState.pendingLog){if(confirm("目前正在休息，要先把這一組存起來嗎？")){finishRest();return}}fitState.completedExercises[fitState.exerciseIndex]=true;fitState.status="idle";fitState.moveStart=null;fitState.restStart=null;fitState.pendingLog=null;fitAutoNextExercise();saveCurrent();renderFitnessAll();toast("已完成/跳過")}
 function setRestTarget(s){fitState.restTargetSec=Math.max(0,s);saveCurrent();fitTickRender();toast("休息目標改成 "+fmt(fitState.restTargetSec))}
 function adjustRestTarget(delta){setRestTarget(Math.max(0,(fitState.restTargetSec||0)+delta))}
-function saveSession(){let w=getWorkout();if(fitState.status==="moving")return alert("動作還在計時，請先完成本組。");if(fitState.status==="resting")return alert("休息還在計時，請先完成休息或按不休息。");if(!w||!fitState.logs.length){alert("目前沒有可儲存的訓練紀錄");return}let started=fitState.sessionStart||fitNowISO(),ended=fitNowISO();let session={id:"fit_"+Date.now(),date:todayText(),workout:w.label,startedAt:started,endedAt:ended,totalSec:Math.max(0,Math.round((new Date(ended)-new Date(started))/1000)),logs:fitState.logs};let h=getHistory();h.unshift(session);saveHistory(h);resetCurrentSession(false);toast("訓練已儲存");renderFitnessAll()}
+function saveSession(){let w=getWorkout();if(fitState.status==="moving")return alert("動作還在計時，請先完成本組。");if(fitState.status==="resting")return alert("休息還在計時，請先完成休息。");if(!w||!fitState.logs.length){alert("目前沒有可儲存的訓練紀錄");return}let started=fitState.sessionStart||fitNowISO(),ended=fitNowISO();let session={id:"fit_"+Date.now(),date:todayText(),workout:w.label,startedAt:started,endedAt:ended,totalSec:Math.max(0,Math.round((new Date(ended)-new Date(started))/1000)),logs:fitState.logs};let h=getHistory();h.unshift(session);saveHistory(h);resetCurrentSession(false);toast("訓練已儲存");renderFitnessAll()}
 function resetCurrentSession(confirmIt=true){if(confirmIt&&!confirm("確定清空本次訓練紀錄？歷史紀錄不會刪除。"))return;localStorage.removeItem(LS_CURRENT);fitState=fitDefaultState();saveCurrent();renderFitnessAll()}
 function fitnessBackWorkout(){if(fitState.status==="moving"||fitState.status==="resting")return alert("目前正在計時，請先完成本組或休息。");fitState.screen="workout";saveCurrent();renderFitnessAll()}
 function fitnessBackExercise(){if(fitState.status==="moving"||fitState.status==="resting")return alert("目前正在計時，請先完成本組或休息。");if(!getWorkout()){fitState.screen="workout"}else{fitState.screen="exercises"}saveCurrent();renderFitnessAll()}
