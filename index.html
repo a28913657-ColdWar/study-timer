@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>Yu工具箱_三合一_V1.6</title>
+<title>Yu工具箱_三合一_V1.7</title>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
@@ -191,7 +191,7 @@ tr:last-child td{border-bottom:none}
   <div class="card homeCard">
     <div class="section">
       <div class="title">
-        <h1>Yu工具箱 V1.6</h1>
+        <h1>Yu工具箱 V1.7</h1>
       </div>
       <div id="lockBox">
         <label>密碼 / PIN</label>
@@ -357,7 +357,7 @@ tr:last-child td{border-bottom:none}
       </div></section>
     </main>
   </div>
-  <div class="makerFooter">2026/05/06 Yu製作｜V1.6 發音語速版</div>
+  <div class="makerFooter">2026/05/06 Yu製作｜V1.7 Google發音語速修正版</div>
 </section>
 
 <!-- VOCAB -->
@@ -434,7 +434,7 @@ tr:last-child td{border-bottom:none}
       <div id="vnAnswerHint" class="answerHint"></div>
     </section>
   </div>
-  <div class="makerFooter">2026/05/06 Yu製作｜V1.6 發音語速版</div>
+  <div class="makerFooter">2026/05/06 Yu製作｜V1.7 Google發音語速修正版</div>
 </section>
 
 <script>
@@ -606,7 +606,7 @@ function vnClampRate(v){v=parseFloat(v);if(!Number.isFinite(v))v=1;return Math.m
 function vnGetSpeechRate(){const el=$("vnSpeechRate");return vnClampRate(el?el.value:localStorage.getItem(VN_RATE)||1)}
 function vnLocalSeed(){return {words:vnReadLocal(VN_WORDS,[]),daily:vnReadLocal(VN_DAILY,{}),autoSpeak:localStorage.getItem(VN_AUTO)==="1",speechRate:vnClampRate(localStorage.getItem(VN_RATE)||1)}}
 function vnApplyData(data){data=data||{};let seed=vnLocalSeed();vnWords=Array.isArray(data.words)?data.words:(Array.isArray(seed.words)?seed.words:[]);vnDailyData=(data.daily&&typeof data.daily==="object")?data.daily:(seed.daily||{});let auto=typeof data.autoSpeak==="boolean"?data.autoSpeak:!!seed.autoSpeak;let rate=vnClampRate(data.speechRate ?? seed.speechRate ?? 1);if($("vnAutoSpeak"))$("vnAutoSpeak").checked=auto;if($("vnSpeechRate"))$("vnSpeechRate").value=rate.toFixed(1);localStorage.setItem(VN_WORDS,JSON.stringify(vnWords));localStorage.setItem(VN_DAILY,JSON.stringify(vnDailyData));localStorage.setItem(VN_AUTO,auto?"1":"0");localStorage.setItem(VN_RATE,String(rate))}
-function vnCloudSave(patch){vocabCloudData={...(vocabCloudData||{}),...patch};try{localStorage.setItem(VN_WORDS,JSON.stringify(vnWords));localStorage.setItem(VN_DAILY,JSON.stringify(vnDailyData));if($("vnAutoSpeak"))localStorage.setItem(VN_AUTO,$("vnAutoSpeak").checked?"1":"0");if($("vnSpeechRate"))localStorage.setItem(VN_RATE,String(vnGetSpeechRate()))}catch(e){}if(vocabRef){vocabRef.update({...patch,version:"suite-v1.6-vocab",updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>{console.error(e);setCloudStatus("vocab",false,"越南文雲端寫入失敗，請檢查 Firebase 規則")})}}
+function vnCloudSave(patch){vocabCloudData={...(vocabCloudData||{}),...patch};try{localStorage.setItem(VN_WORDS,JSON.stringify(vnWords));localStorage.setItem(VN_DAILY,JSON.stringify(vnDailyData));if($("vnAutoSpeak"))localStorage.setItem(VN_AUTO,$("vnAutoSpeak").checked?"1":"0");if($("vnSpeechRate"))localStorage.setItem(VN_RATE,String(vnGetSpeechRate()))}catch(e){}if(vocabRef){vocabRef.update({...patch,version:"suite-v1.7-vocab",updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>{console.error(e);setCloudStatus("vocab",false,"越南文雲端寫入失敗，請檢查 Firebase 規則")})}}
 function vnLoad(){if(vocabCloudData){vnApplyData(vocabCloudData)}else{vnApplyData(vnLocalSeed())}}
 function vnSave(){vnCloudSave({words:vnWords});vnRender()}
 function vnDaily(){return {...(vnDailyData||{})}}
@@ -646,47 +646,57 @@ function vnSpeakQuestion(silent=false){
     return;
   }
 
-  // V1.6：發音邏輯維持 Google Translate TTS 優先，並加入語速調整。
-  // 不再先抓瀏覽器內建語音，避免 Windows/Chrome 自動挑到男聲。
+  // V1.7：Google Translate TTS 網址維持 V16 原本寫法，不在網址加入語速參數。
+  // 語速改用 audio.playbackRate 控制，降低跳到系統備用語音的機率。
   vnStopAudio();
   if(status) status.textContent = "正在播放發音...";
 
   const url = "https://translate.google.com/translate_tts?ie=UTF-8&tl=vi&client=tw-ob&q=" + encodeURIComponent(text);
 
   try{
-    vnAudio = new Audio(url);
-    const rate = vnGetSpeechRate();
-    vnAudio.defaultPlaybackRate = rate;
-    vnAudio.playbackRate = rate;
-    try{vnAudio.preservesPitch = true;vnAudio.mozPreservesPitch = true;vnAudio.webkitPreservesPitch = true;}catch(e){}
+    vnAudio = new Audio();
+    vnAudio.preload = "auto";
     let fallbackUsed = false;
 
-    vnAudio.onerror = function(){
-      if(fallbackUsed) return;
-      fallbackUsed = true;
-      vnBrowserSpeak(text);
+    const applyRate = function(){
+      try{
+        const rate = vnGetSpeechRate();
+        vnAudio.playbackRate = rate;
+        vnAudio.defaultPlaybackRate = rate;
+        vnAudio.preservesPitch = true;
+        vnAudio.mozPreservesPitch = true;
+        vnAudio.webkitPreservesPitch = true;
+      }catch(e){}
     };
 
+    const fallback = function(){
+      if(fallbackUsed) return;
+      fallbackUsed = true;
+      // 不顯示「備用語音播放中」，避免畫面干擾；若 Google 暫時失敗才低調改用系統語音。
+      vnBrowserSpeak(text, true);
+    };
+
+    vnAudio.addEventListener("canplay", applyRate, {once:true});
+    vnAudio.onerror = fallback;
     vnAudio.onended = function(){
       if(status) status.textContent = "播放完成";
     };
 
+    vnAudio.src = url;
     const playPromise = vnAudio.play();
     if(playPromise !== undefined){
       playPromise.then(() => {
+        applyRate();
         if(status) status.textContent = "Google 發音播放中";
       }).catch(() => {
-        if(!fallbackUsed){
-          fallbackUsed = true;
-          vnBrowserSpeak(text);
-        }
+        fallback();
       });
     }
   }catch(e){
-    vnBrowserSpeak(text);
+    vnBrowserSpeak(text, true);
   }
 }
-function vnBrowserSpeak(text){
+function vnBrowserSpeak(text, quietBackup=false){
   const status = $("vnVoiceStatus");
   if(!("speechSynthesis" in window)){
     if(status) status.textContent = "此瀏覽器不支援發音功能";
@@ -705,7 +715,7 @@ function vnBrowserSpeak(text){
   if(viVoice) utter.voice = viVoice;
 
   utter.onstart = function(){
-    if(status) status.textContent = "備用語音播放中";
+    if(status) status.textContent = quietBackup ? "播放中" : "系統發音播放中";
   };
   utter.onend = function(){
     if(status) status.textContent = "播放完成";
@@ -720,7 +730,7 @@ function vnSaveAutoSpeak(){vnCloudSave({autoSpeak:$("vnAutoSpeak").checked})}
 function vnSaveSpeechRate(){let rate=vnGetSpeechRate();if($("vnSpeechRate"))$("vnSpeechRate").value=rate.toFixed(1);vnCloudSave({speechRate:rate})}
 $("vnAutoSpeak").checked=localStorage.getItem(VN_AUTO)==="1";if($("vnSpeechRate"))$("vnSpeechRate").value=vnClampRate(localStorage.getItem(VN_RATE)||1).toFixed(1);if("speechSynthesis" in window){speechSynthesis.getVoices();speechSynthesis.onvoiceschanged=()=>speechSynthesis.getVoices()}
 
-function initVocabCloud(){vocabRef.on("value",snap=>{let data=snap.val();if(data&&(data.words||data.daily||Object.prototype.hasOwnProperty.call(data,"autoSpeak")||Object.prototype.hasOwnProperty.call(data,"speechRate"))){vocabCloudData=data;vocabCloudReady=true;vnApplyData(data);vnRender()}else{let seed=vnLocalSeed();vocabCloudData={words:seed.words,daily:seed.daily,autoSpeak:seed.autoSpeak,speechRate:seed.speechRate,version:"suite-v1.6-vocab"};vocabCloudReady=true;vocabRef.set({...vocabCloudData,updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>{console.error(e);setCloudStatus("vocab",false,"越南文雲端初始化失敗，請檢查 Firebase 規則")});vnApplyData(vocabCloudData);vnRender()}},err=>{console.error(err);setCloudStatus("vocab",false,"越南文 Firebase 讀取失敗")})}
+function initVocabCloud(){vocabRef.on("value",snap=>{let data=snap.val();if(data&&(data.words||data.daily||Object.prototype.hasOwnProperty.call(data,"autoSpeak")||Object.prototype.hasOwnProperty.call(data,"speechRate"))){vocabCloudData=data;vocabCloudReady=true;vnApplyData(data);vnRender()}else{let seed=vnLocalSeed();vocabCloudData={words:seed.words,daily:seed.daily,autoSpeak:seed.autoSpeak,speechRate:seed.speechRate,version:"suite-v1.7-vocab"};vocabCloudReady=true;vocabRef.set({...vocabCloudData,updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>{console.error(e);setCloudStatus("vocab",false,"越南文雲端初始化失敗，請檢查 Firebase 規則")});vnApplyData(vocabCloudData);vnRender()}},err=>{console.error(err);setCloudStatus("vocab",false,"越南文 Firebase 讀取失敗")})}
 
 /* init */
 $("globalPinInput").addEventListener("keydown",e=>{if(e.key==="Enter")unlockSuite()});
