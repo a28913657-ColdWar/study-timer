@@ -204,7 +204,7 @@ tr:last-child td{border-bottom:none}
   <div class="card homeCard">
     <div class="section">
       <div class="title">
-        <h1>Yu工具箱 V2.7</h1>
+        <h1>Yu工具箱 V2.8</h1>
       </div>
       <div id="lockBox">
         <label>密碼 / PIN</label>
@@ -453,7 +453,7 @@ tr:last-child td{border-bottom:none}
       <div id="vnCompletion" class="completionBanner hide"></div>
       <div class="question" id="vnQuestion">—</div>
       <div class="questionNote" id="vnQuestionNote"></div>
-      <input id="vnAnswerInput" class="answer" placeholder="輸入答案後按 Enter" onkeydown="if(event.key==='Enter')vnCheckAnswer()">
+      <input id="vnAnswerInput" class="answer" placeholder="輸入答案後按 Enter" onkeydown="if(event.key==='Enter' && !event.isComposing)vnCheckAnswer()">
       <div class="row" style="justify-content:center;margin-top:8px">
         <button onclick="vnCheckAnswer()">確認答案</button>
         <button class="ghost" onclick="vnNextQuestion()">下一題</button>
@@ -707,7 +707,42 @@ function vnDaily(){return {...(vnDailyData||{})}}
 function vnSaveDaily(d){vnDailyData=d||{};vnCloudSave({daily:vnDailyData})}
 function vnRecordStart(){let d=vnDaily(),k=todayText();d[k]=d[k]||{start:0,round:0,perfect:0};d[k].start++;vnSaveDaily(d);vnRenderDaily()}
 function vnRecordRound(perfect){let d=vnDaily(),k=todayText();d[k]=d[k]||{start:0,round:0,perfect:0};d[k].round++;if(perfect)d[k].perfect++;vnSaveDaily(d);vnRenderDaily()}
-function vnNormalize(s){let text=(s||"").toString().trim().toLowerCase();try{text=text.replace(/[\p{P}\p{S}]/gu,"")}catch(e){text=text.replace(/[.,!?;:'"()[\]{}<>，。！？、；：「」『』（）【】《》…~～\-—_＋+＝=＊*\/\|@#$%^&`]/g,"")}return text.replace(/\s+/g,"")}
+function vnCleanAnswerText(s){
+  let text=(s||"").toString();
+  // 如果資料不小心把「備註」合在中文答案裡，只取前面的答案本體。
+  text=text.split(/[｜|]\s*備註\s*[:：]/)[0];
+  text=text.split(/備註\s*[:：]/)[0];
+  return text;
+}
+function vnNormalize(s){
+  let text=vnCleanAnswerText(s);
+  try{text=text.normalize("NFKC")}catch(e){}
+  text=text.trim().toLowerCase();
+  // 移除手機輸入法/複製貼上可能帶入的不可見字元。
+  text=text.replace(/[\u200B-\u200D\uFEFF\u2060]/g,"");
+  try{text=text.replace(/[\p{P}\p{S}]/gu,"")}catch(e){text=text.replace(/[.,!?;:'"()[\]{}<>，。！？、；：「」『』（）【】《》…~～\-—_＋+＝=＊*\/\\|@#$%^&`]/g,"")}
+  text=text.replace(/\s+/g,"");
+  // 常見繁簡/異體字統一，避免手機輸入法造成明明一樣卻判錯。
+  const map={"么":"麼","麽":"麼","甚":"什","吗":"嗎","吗":"嗎","这":"這","个":"個","吗":"嗎","妳":"你","您":"你","裡":"里","裏":"里"};
+  text=text.replace(/[么麽甚吗这个妳您裡裏]/g,ch=>map[ch]||ch);
+  return text;
+}
+function vnRelaxChinese(s){
+  // 量詞常會因翻譯不同而不同：這支/這隻/這枝/這個，答題時視為同類。
+  return (s||"").replace(/[支隻枝只個]/g,"個");
+}
+function vnAnswerCandidates(raw){
+  let main=vnCleanAnswerText(raw);
+  return main.split(/[\/／]/).map(vnNormalize).filter(Boolean);
+}
+function vnIsAnswerCorrect(userAnswer, correctRaw){
+  const ans=vnNormalize(userAnswer);
+  if(!ans)return false;
+  const candidates=vnAnswerCandidates(correctRaw);
+  if(candidates.includes(ans))return true;
+  const relaxed=vnRelaxChinese(ans);
+  return candidates.some(c=>vnRelaxChinese(c)===relaxed);
+}
 function vnEsc(str){return String(str??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("\'","&#039;")}
 function vnAddOne(){let vi=$("vnViInput").value.trim(),zh=$("vnZhInput").value.trim(),note=$("vnNoteInput").value.trim();if(!vi||!zh){alert("請輸入越南文和中文意思");return}vnWords.push({vi,zh,note,isNew:true,createdAt:Date.now()});$("vnViInput").value="";$("vnZhInput").value="";$("vnNoteInput").value="";vnResetSession();vnSave()}
 function vnAddBulk(){let text=$("vnBulkInput").value.trim();if(!text){alert("請先貼上單字");return}let added=0;text.split(/\n+/).map(x=>x.trim()).filter(Boolean).forEach(line=>{let m=line.match(/[\u4e00-\u9fff]/);if(m&&m.index>0){let vi=line.slice(0,m.index).trim(),zh=line.slice(m.index).trim();if(vi&&zh){vnWords.push({vi,zh,note:"",isNew:true,createdAt:Date.now()});added++}}});$("vnBulkInput").value="";vnResetSession();vnSave();alert("已新增 "+added+" 組單字")}
@@ -758,7 +793,26 @@ function vnNextQuestion(){
     setTimeout(()=>vnSpeakQuestion(true),120);
   }
 }
-function vnCheckAnswer(){if(!vnCurrent){vnNextQuestion();return}let mode=$("vnModeSelect").value,ans=vnNormalize($("vnAnswerInput").value),correct=mode==="viToZh"?vnCurrent.zh:vnCurrent.vi,ok=correct.split(/[\/／]/).map(vnNormalize).filter(Boolean).includes(ans);vnAnswered=true;if(ok){$("vnResult").innerHTML='<span class="ok">✅</span>';$("vnAnswerHint").textContent="答對了";$("vnQuestionNote").textContent=vnCurrent.note?"備註："+vnCurrent.note:"";vnNextQuestion()}else{if(mode==="viToZh"){$("vnQuestion").textContent=vnCurrent.vi;$("vnQuestion").classList.remove("questionHidden")}$("vnResult").innerHTML='<span class="bad">✗</span>';$("vnAnswerHint").textContent="正確答案："+correct;$("vnQuestionNote").textContent=vnCurrent.note?"備註："+vnCurrent.note:"";vnWrongSet.add(vnCurrentIndex)}}
+function vnCheckAnswer(){
+  if(!vnCurrent){vnNextQuestion();return}
+  let mode=$("vnModeSelect").value;
+  let userRaw=$("vnAnswerInput").value;
+  let correct=mode==="viToZh"?vnCurrent.zh:vnCurrent.vi;
+  let ok=vnIsAnswerCorrect(userRaw,correct);
+  vnAnswered=true;
+  if(ok){
+    $("vnResult").innerHTML='<span class="ok">✅</span>';
+    $("vnAnswerHint").textContent="答對了";
+    $("vnQuestionNote").textContent=vnCurrent.note?"備註："+vnCurrent.note:"";
+    setTimeout(vnNextQuestion,350);
+  }else{
+    if(mode==="viToZh"){$("vnQuestion").textContent=vnCurrent.vi;$("vnQuestion").classList.remove("questionHidden")}
+    $("vnResult").innerHTML='<span class="bad">✗</span>';
+    $("vnAnswerHint").textContent="正確答案："+vnCleanAnswerText(correct);
+    $("vnQuestionNote").textContent=vnCurrent.note?"備註："+vnCurrent.note:"";
+    vnWrongSet.add(vnCurrentIndex);
+  }
+}
 function vnStopAudio(){
   try{
     if(vnAudio){
