@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>Yu工具箱_三合一_V3.9</title>
+<title>Yu工具箱_三合一_V4.0</title>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
@@ -71,6 +71,7 @@ hr{border:0;border-top:1px solid rgba(255,255,255,.09);margin:18px 0}
 .homeWrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:22px 14px}
 .homeCard{width:min(880px,94vw)}
 .pinBox{display:grid;grid-template-columns:1fr auto;gap:10px;margin-top:14px}
+.pinBoxAuto{grid-template-columns:1fr}
 .toolGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px}
 .toolCard{padding:20px;border-radius:24px;background:rgba(16,23,41,.75);border:1px solid rgba(255,255,255,.1);cursor:pointer;transition:.15s;min-height:150px}
 .toolCard:hover{transform:translateY(-2px);border-color:rgba(125,211,252,.45);background:rgba(125,211,252,.08)}
@@ -88,8 +89,9 @@ hr{border:0;border-top:1px solid rgba(255,255,255,.09);margin:18px 0}
 .todayBox{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .statCard{background:rgba(15,23,42,.78);border:1px solid rgba(148,163,184,.18);border-radius:18px;padding:16px;text-align:center}
 .statCard .k{color:var(--muted);font-size:14px;margin-bottom:8px}.statCard .v{font-size:24px;font-weight:900}
-.phase{text-align:center;margin:14px 0 6px}
-.phase span{display:inline-block;padding:8px 18px;border-radius:999px;background:rgba(59,130,246,.16);color:#93c5fd;border:1px solid rgba(147,197,253,.18);font-size:18px;font-weight:bold}
+.timerInfoRow{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:14px 0 14px}
+.phase{text-align:left;margin:0}
+.phase span{display:inline-block;padding:8px 18px;border-radius:999px;background:rgba(59,130,246,.16);color:#93c5fd;border:1px solid rgba(147,197,253,.18);font-size:18px;font-weight:bold;white-space:nowrap}
 .circle-wrap{display:flex;align-items:center;justify-content:center;margin:10px 0 8px}
 .recordHeader{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
 .recordHeader h2{margin:0;text-align:left}
@@ -101,7 +103,7 @@ hr{border:0;border-top:1px solid rgba(255,255,255,.09);margin:18px 0}
 .circle-inner{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;pointer-events:none}
 .timeBig{font-size:44px;line-height:1.1;font-weight:900;letter-spacing:2px;color:#fff;text-shadow:0 0 28px rgba(96,165,250,.18)}
 .percent{margin-top:8px;font-size:18px;font-weight:800;color:#93c5fd}
-.timerTotal{text-align:center;font-size:15px;color:var(--muted);margin-bottom:22px;line-height:1.8}
+.timerTotal{text-align:right;font-size:15px;color:var(--muted);margin:0;line-height:1.8}
 .timerBtns{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
 .timerBtns button{font-size:22px;padding:16px}
 #timerStartBtn{background:linear-gradient(135deg,#16a34a,#22c55e);border:none}
@@ -217,7 +219,7 @@ tr:last-child td{border-bottom:none}
 .historyActions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.historyActions button{padding:7px 10px;font-size:12px;border-radius:999px;}
 
 @media(max-width:900px){.toolGrid,.fitLayout{grid-template-columns:1fr}.statusBar{grid-template-columns:1fr 1fr}.timerBox,.grid3,.grid2,.vnRow{grid-template-columns:1fr}}
-@media(max-width:560px){.progress-ring{width:210px;height:210px}.progress-ring svg{width:210px;height:210px}.timeBig{font-size:38px}.app{padding:16px 12px 60px}.topbar,.vnTop{flex-direction:column}.timerSettings,.todayBox,.timerBtns,.pinBox{grid-template-columns:1fr}.reviewTop{justify-content:center}.reviewCard{padding:20px}.question{font-size:34px}.statusBar{grid-template-columns:1fr}}
+@media(max-width:560px){.timerInfoRow{gap:8px}.phase span{font-size:14px;padding:7px 10px}.timerTotal{font-size:13px}.progress-ring{width:210px;height:210px}.progress-ring svg{width:210px;height:210px}.timeBig{font-size:38px}.app{padding:16px 12px 60px}.topbar,.vnTop{flex-direction:column}.timerSettings,.todayBox,.timerBtns,.pinBox{grid-template-columns:1fr}.reviewTop{justify-content:center}.reviewCard{padding:20px}.question{font-size:34px}.statusBar{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -228,13 +230,12 @@ tr:last-child td{border-bottom:none}
   <div class="card homeCard">
     <div class="section">
       <div class="title">
-        <h1>Yu工具箱 V3.9</h1>
+        <h1>Yu工具箱 V4.0</h1>
       </div>
       <div id="lockBox">
         <label>密碼 / PIN</label>
-        <div class="pinBox">
-          <input id="globalPinInput" type="password" inputmode="numeric" placeholder="輸入 PIN" maxlength="8" />
-          <button class="primary" onclick="unlockSuite()">解鎖</button>
+        <div class="pinBox pinBoxAuto">
+          <input id="globalPinInput" type="password" inputmode="numeric" placeholder="輸入 PIN，正確後自動進入" maxlength="8" oninput="autoUnlockSuite()" />
         </div>
         <div id="globalPinMsg" class="small"></div>
       </div>
@@ -290,8 +291,10 @@ tr:last-child td{border-bottom:none}
       <div class="circle-inner"><div id="timerTime" class="timeBig">10:00</div><div id="timerPercent" class="percent">0%</div></div>
     </div>
   </div>
-  <div class="phase"><span id="timerPhase">尚未開始</span></div>
-  <div id="timerTotalText" class="timerTotal">本次已學習 0 分鐘 / 目標 30 分鐘</div>
+  <div class="timerInfoRow">
+    <div class="phase"><span id="timerPhase">尚未開始</span></div>
+    <div id="timerTotalText" class="timerTotal">本次已學習 0 分鐘 / 目標 30 分鐘</div>
+  </div>
   <section class="timerBtns">
     <button id="timerStartBtn" onclick="timerStartOrResume()">開始</button>
     <button id="timerPauseBtn" onclick="timerPause()" disabled>停止</button>
@@ -513,6 +516,7 @@ function toast(msg){const el=$("toast"); el.textContent=msg; el.classList.add("s
 function toggleSection(sectionId,btn){const section=$(sectionId);if(!section)return;section.classList.toggle("collapsed");if(btn)btn.textContent=section.classList.contains("collapsed")?"展開":"收起"}
 function isUnlocked(){return sessionStorage.getItem("yu_suite_unlocked")==="1"}
 function unlockSuite(){const v=$("globalPinInput").value; if(v===SUITE_PIN){sessionStorage.setItem("yu_suite_unlocked","1");$("globalPinInput").value="";renderHome()}else{$("globalPinMsg").textContent="PIN 錯誤，請再試一次。";$("globalPinInput").select()}}
+function autoUnlockSuite(){const input=$("globalPinInput"),msg=$("globalPinMsg");if(!input)return;const v=input.value;if(msg)msg.textContent="";if(v===SUITE_PIN){sessionStorage.setItem("yu_suite_unlocked","1");input.value="";renderHome();return}if(v.length>=SUITE_PIN.length&&msg){msg.textContent="PIN 錯誤，請再試一次。";input.select()}}
 function lockSuite(){sessionStorage.removeItem("yu_suite_unlocked");renderHome()}
 function renderHome(){const ok=isUnlocked();$("lockBox").classList.toggle("hide",ok);$("toolMenu").classList.toggle("hide",!ok)}
 function guard(){if(!isUnlocked()){goHome();return false}return true}
@@ -639,7 +643,7 @@ function selectExercise(i){let w=getWorkout();if(!w||!w.exercises[i])return;fitS
 function nextSetNumberForExercise(name){return fitState.logs.filter(l=>l.exercise===name).length+1}
 function renderWorkoutButtons(){let wrap=$("workoutBtns");if(!wrap)return;wrap.innerHTML=WORKOUTS.map(w=>`<div class="workoutCard ${fitState.workoutId===w.id?"active":""}" onclick="selectWorkout('${w.id}')"><span class="workoutText"><b>${fitEsc(w.short||w.label)}</b><br><span class="small">${fitEsc(w.label||"")}</span>${w.desc?`<br><span class="small">${fitEsc(w.desc)}</span>`:""}</span><span class="workoutActions"><button class="navBtn ghost" onclick="event.stopPropagation();openWorkoutEditor('${w.id}')">編輯</button></span></div>`).join("")}
 function renderExerciseList(){let wrap=$("exerciseList"),count=$("exerciseCount"),w=getWorkout();if(!w){wrap.innerHTML='<div class="empty">請先選擇訓練部位</div>';if(count)count.textContent="";return}if(count)count.textContent=`${w.exercises.length} 個動作`;if(!w.exercises.length){wrap.innerHTML='<div class="empty">這個部位還沒有動作，請按下方「＋新增動作」。</div>';return}wrap.innerHTML=w.exercises.map((ex,i)=>{let done=fitState.completedExercises[i];let sets=fitGetSets(ex);return `<div class="exercise ${i===fitState.exerciseIndex?"active":""} ${done?"done":""}" onclick="selectExercise(${i})"><div class="exerciseTop"><span class="exerciseName">${done?"✅ ":""}${i+1}. ${fitEsc(ex.name)}</span><span class="exerciseActions"><button class="navBtn ghost" onclick="event.stopPropagation();openExerciseEditor(${i})">編輯</button><span class="tag">${sets?sets+"組":"有氧"}</span></span></div><div class="plan">${fitEsc(ex.plan||"")}</div><div class="note">休息：${fitEsc(ex.rest||fitRestLabel(fitGetRestSec(ex)))}${ex.note&&ex.note!=="–"?"｜"+fitEsc(ex.note):""}</div></div>`}).join("")}
-function renderHistory(){let box=$("historyList"),h=getHistory();box.innerHTML=h.length?h.slice(0,12).map((s,i)=>{let isToday=s.date===todayText();let hint=isToday?"按「繼續」可載入繼續訓練":"按「繼續」可載入此筆紀錄";return `<div class="historyItem" title="${hint}"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><b>${fitEsc(s.date)}｜${fitEsc(s.workout)}</b><div class="small">${fmtRead(s.totalSec||0)}｜${(s.logs||[]).length} 組｜${hint}</div></div><div class="historyActions"><button class="navBtn continueBtn" onclick="event.stopPropagation();resumeHistory(${i})">繼續</button><button class="navBtn ghost" onclick="event.stopPropagation();deleteHistory(${i})">刪除</button></div></div></div>`}).join(""):'<div class="empty">尚無歷史紀錄</div>'}
+function renderHistory(){let box=$("historyList"),h=getHistory();box.innerHTML=h.length?h.slice(0,12).map((s,i)=>{let isToday=s.date===todayText();let hint=isToday?"按「繼續」可載入繼續訓練":"已過日期，只保留紀錄與刪除";let continueHtml=isToday?`<button class="navBtn continueBtn" onclick="event.stopPropagation();resumeHistory(${i})">繼續</button>`:"";return `<div class="historyItem" title="${hint}"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><b>${fitEsc(s.date)}｜${fitEsc(s.workout)}</b><div class="small">${fmtRead(s.totalSec||0)}｜${(s.logs||[]).length} 組｜${hint}</div></div><div class="historyActions">${continueHtml}<button class="navBtn ghost" onclick="event.stopPropagation();deleteHistory(${i})">刪除</button></div></div></div>`}).join(""):'<div class="empty">尚無歷史紀錄</div>'}
 function renderFitnessAll(){fitUpdateStage();renderWorkoutButtons();renderExerciseList();renderHistory();fitTickRender();fitUpdateButtons()}
 function fitSessionSec(){let base=Math.max(0,Math.round(parseFloat(fitState.sessionBaseSec||0)||0));let live=fitState.sessionStart?Math.max(0,Math.round((new Date()-new Date(fitState.sessionStart))/1000)):0;return base+live}
 function sumMove(){return fitState.logs.reduce((a,b)=>a+(b.moveSec||0),0)+(fitState.status==="moving"&&fitState.moveStart?Math.round((new Date()-new Date(fitState.moveStart))/1000):0)}
