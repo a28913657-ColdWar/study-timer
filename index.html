@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>Yu工具箱_三合一_V4.2</title>
+<title>Yu工具箱_三合一_V4.3</title>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
@@ -232,7 +232,7 @@ tr:last-child td{border-bottom:none}
   <div class="card homeCard">
     <div class="section">
       <div class="title">
-        <h1>Yu工具箱 V4.2</h1>
+        <h1>Yu工具箱 V4.3</h1>
       </div>
       <div id="lockBox">
         <label>密碼 / PIN</label>
@@ -626,7 +626,8 @@ const DEFAULT_WORKOUTS=[
   ]}
 ];
 function fitDefaultState(){return {screen:"workout",workoutId:null,exerciseIndex:0,currentSet:1,restTargetSec:60,status:"idle",sessionStart:null,sessionFirstStart:null,sessionBaseSec:0,moveStart:null,restStart:null,restAlerted:false,pendingLog:null,logs:[],completedExercises:{}}}
-let WORKOUTS=[],FIT_HISTORY=[],fitnessCloudData=null,fitnessCloudReady=false,fitState=fitDefaultState(),fitTick=null,fitInited=false;
+const FIT_AUTO_END_SEC=90*60;
+let WORKOUTS=[],FIT_HISTORY=[],fitnessCloudData=null,fitnessCloudReady=false,fitState=fitDefaultState(),fitTick=null,fitInited=false,fitLastAutoActual="",fitAutoSaving=false;
 function fitEsc(v){return String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;")}
 function fitNowISO(){return new Date().toISOString()}
 function fitRestLabel(sec){sec=Math.max(0,parseInt(sec||0,10));if(sec<=0)return "–";let m=Math.floor(sec/60),s=sec%60,out="";if(m)out+=m+" 分鐘";if(s)out+=s+"秒";return out||sec+" 秒"}
@@ -639,7 +640,7 @@ function fitReadLocal(key,fallback){try{let raw=localStorage.getItem(key);return
 function fitLocalSeed(){return {workouts:fitReadLocal(LS_WORKOUTS,JSON.parse(JSON.stringify(DEFAULT_WORKOUTS))),history:fitReadLocal(LS_HISTORY,[]),current:fitReadLocal(LS_CURRENT,fitDefaultState())}}
 function fitSanitizeState(st){let base=fitDefaultState();st={...base,...(st||{})};st.completedExercises=st.completedExercises||{};st.logs=Array.isArray(st.logs)?st.logs:[];if(st.workoutId&&!WORKOUTS.some(w=>w.id===st.workoutId)){st.workoutId=null;st.exerciseIndex=0;st.screen="workout"}if(!st.screen)st.screen=st.workoutId?"exercises":"workout";return st}
 function fitApplyData(data){data=data||{};let seed=fitLocalSeed();let sourceWorkouts=Array.isArray(data.workouts)?data.workouts:seed.workouts;WORKOUTS=(sourceWorkouts&&sourceWorkouts.length?sourceWorkouts:JSON.parse(JSON.stringify(DEFAULT_WORKOUTS))).map(fitNormalizeWorkout);FIT_HISTORY=Array.isArray(data.history)?data.history.slice(0,100):(Array.isArray(seed.history)?seed.history.slice(0,100):[]);fitState=fitSanitizeState(data.current||seed.current||fitDefaultState());localStorage.setItem(LS_WORKOUTS,JSON.stringify(WORKOUTS));localStorage.setItem(LS_HISTORY,JSON.stringify(FIT_HISTORY));localStorage.setItem(LS_CURRENT,JSON.stringify(fitState));}
-function fitCloudSave(patch){fitnessCloudData={...(fitnessCloudData||{}),...patch};try{localStorage.setItem(LS_WORKOUTS,JSON.stringify(WORKOUTS));localStorage.setItem(LS_HISTORY,JSON.stringify(FIT_HISTORY));localStorage.setItem(LS_CURRENT,JSON.stringify(fitState))}catch(e){} if(fitnessRef){fitnessRef.update({...patch,version:"suite-v1.7-fitness",updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>{console.error(e);setCloudStatus("fitness",false,"健身雲端寫入失敗，請檢查 Firebase 規則")})}}
+function fitCloudSave(patch){fitnessCloudData={...(fitnessCloudData||{}),...patch};try{localStorage.setItem(LS_WORKOUTS,JSON.stringify(WORKOUTS));localStorage.setItem(LS_HISTORY,JSON.stringify(FIT_HISTORY));localStorage.setItem(LS_CURRENT,JSON.stringify(fitState))}catch(e){} if(fitnessRef){fitnessRef.update({...patch,version:"suite-v1.8-fitness",updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>{console.error(e);setCloudStatus("fitness",false,"健身雲端寫入失敗，請檢查 Firebase 規則")})}}
 function loadWorkouts(){if(fitnessCloudData){fitApplyData(fitnessCloudData);return}let seed=fitLocalSeed();WORKOUTS=(seed.workouts&&seed.workouts.length?seed.workouts:JSON.parse(JSON.stringify(DEFAULT_WORKOUTS))).map(fitNormalizeWorkout);FIT_HISTORY=Array.isArray(seed.history)?seed.history.slice(0,100):[]}
 function saveWorkouts(){fitCloudSave({workouts:WORKOUTS})}
 function getHistory(){return Array.isArray(FIT_HISTORY)?FIT_HISTORY:[]}
@@ -651,11 +652,46 @@ function getWorkout(){return WORKOUTS.find(w=>w.id===fitState.workoutId)||null}
 function getExercise(){let w=getWorkout();return w?w.exercises[fitState.exerciseIndex]:null}
 function fitUpdateStage(){let screen=fitState.screen||"workout";$("fitnessView").classList.toggle("fitStepOnly",screen==="workout"||screen==="exercises");$("fitnessView").classList.toggle("fitTimerOnly",screen==="timer");$("fitnessWorkoutSection").classList.toggle("hide",screen!=="workout");$("fitnessExerciseSection").classList.toggle("hide",screen!=="exercises");$("fitnessExerciseSaveBar").classList.toggle("hide",screen!=="exercises");$("fitLeftPanel").classList.toggle("hide",screen==="timer");$("fitMainPanel").classList.toggle("hide",screen!=="timer")}
 function selectWorkout(id){let w=WORKOUTS.find(x=>x.id===id);if(!w)return;if(fitState.workoutId&&fitState.logs.length&&fitState.workoutId!==id){if(!confirm("目前本次訓練已有紀錄，確定切換部位？"))return}fitState.workoutId=id;fitState.exerciseIndex=0;fitState.currentSet=1;fitState.status="idle";fitState.moveStart=null;fitState.restStart=null;fitState.pendingLog=null;fitState.restTargetSec=fitGetRestSec(w.exercises[0])||60;fitState.screen="exercises";saveCurrent();renderFitnessAll();toast("已選擇："+w.label)}
-function selectExercise(i){let w=getWorkout();if(!w||!w.exercises[i])return;fitState.exerciseIndex=i;let ex=w.exercises[i];fitState.currentSet=Math.max(1,nextSetNumberForExercise(ex.name));fitState.status="idle";fitState.moveStart=null;fitState.restStart=null;fitState.pendingLog=null;fitState.restTargetSec=fitGetRestSec(ex)||60;fitState.screen="timer";saveCurrent();renderFitnessAll()}
+function selectExercise(i){let w=getWorkout();if(!w||!w.exercises[i])return;fitState.exerciseIndex=i;let ex=w.exercises[i];fitState.currentSet=Math.max(1,nextSetNumberForExercise(ex.name));fitState.status="idle";fitState.moveStart=null;fitState.restStart=null;fitState.pendingLog=null;fitState.restTargetSec=fitGetRestSec(ex)||60;fitState.screen="timer";fitLastAutoActual="";saveCurrent();renderFitnessAll();fitApplyActualSuggestion(true)}
 function nextSetNumberForExercise(name){return fitState.logs.filter(l=>l.exercise===name).length+1}
+function fitCleanNum(v){let n=parseFloat(v);return Number.isFinite(n)?String(n).replace(/\.0+$/,''):String(v||'')}
+function fitPlanEntries(plan){
+  let text=String(plan||"");
+  let entries=[],m;
+  let kgRe=/(\d+(?:\.\d+)?)\s*kg\s*[×xX＊*]\s*(\d+)/gi;
+  while((m=kgRe.exec(text))!==null){entries.push(`${fitCleanNum(m[1])}kg × ${m[2]}`)}
+  if(entries.length)return entries;
+  let simpleRe=/(^|[\s、,，])((?:\d+)(?:\.\d+)?)\s*[×xX＊*]\s*(\d+)(?=$|[\s、,，])/g;
+  while((m=simpleRe.exec(text))!==null){entries.push(`${fitCleanNum(m[2])} × ${m[3]}`)}
+  return entries;
+}
+function fitSuggestedActual(ex,setNo){
+  if(!ex)return "";
+  let entries=fitPlanEntries(ex.plan);
+  if(!entries.length)return String(ex.plan||"").trim();
+  let sets=fitGetSets(ex),set=Math.max(1,parseInt(setNo||1,10)||1);
+  if(!sets||sets<=0)return entries[0]||String(ex.plan||"").trim();
+  if(entries.length>=sets)return entries[Math.min(set-1,entries.length-1)]||entries[entries.length-1];
+  let base=Math.floor(sets/entries.length),extra=sets%entries.length,from=1;
+  for(let i=0;i<entries.length;i++){
+    let count=base+(i<extra?1:0),to=from+count-1;
+    if(set>=from&&set<=to)return entries[i];
+    from=to+1;
+  }
+  return entries[entries.length-1];
+}
+function fitApplyActualSuggestion(force=false){
+  let input=$("actualInput"),ex=getExercise();
+  if(!input||!ex||fitState.status!=="idle")return;
+  let suggestion=fitSuggestedActual(ex,fitState.currentSet);
+  if(!suggestion)return;
+  input.placeholder=`本組實做，預設：${suggestion}，可自行修改`;
+  let current=input.value.trim();
+  if(force||!current||current===fitLastAutoActual){input.value=suggestion;fitLastAutoActual=suggestion;}
+}
 function renderWorkoutButtons(){let wrap=$("workoutBtns");if(!wrap)return;wrap.innerHTML=WORKOUTS.map(w=>`<div class="workoutCard ${fitState.workoutId===w.id?"active":""}" onclick="selectWorkout('${w.id}')"><span class="workoutText"><b>${fitEsc(w.short||w.label)}</b><br><span class="small">${fitEsc(w.label||"")}</span>${w.desc?`<br><span class="small">${fitEsc(w.desc)}</span>`:""}</span><span class="workoutActions"><button class="navBtn ghost" onclick="event.stopPropagation();openWorkoutEditor('${w.id}')">編輯</button></span></div>`).join("")}
 function renderExerciseList(){let wrap=$("exerciseList"),count=$("exerciseCount"),w=getWorkout();if(!w){wrap.innerHTML='<div class="empty">請先選擇訓練部位</div>';if(count)count.textContent="";return}if(count)count.textContent=`${w.exercises.length} 個動作`;if(!w.exercises.length){wrap.innerHTML='<div class="empty">這個部位還沒有動作，請按下方「＋新增動作」。</div>';return}wrap.innerHTML=w.exercises.map((ex,i)=>{let done=fitState.completedExercises[i];let sets=fitGetSets(ex);return `<div class="exercise ${i===fitState.exerciseIndex?"active":""} ${done?"done":""}" onclick="selectExercise(${i})"><div class="exerciseTop"><span class="exerciseName">${done?"✅ ":""}${i+1}. ${fitEsc(ex.name)}</span><span class="exerciseActions"><button class="navBtn ghost" onclick="event.stopPropagation();openExerciseEditor(${i})">編輯</button><span class="tag">${sets?sets+"組":"有氧"}</span></span></div><div class="plan">${fitEsc(ex.plan||"")}</div><div class="note">休息：${fitEsc(ex.rest||fitRestLabel(fitGetRestSec(ex)))}${ex.note&&ex.note!=="–"?"｜"+fitEsc(ex.note):""}</div></div>`}).join("")}
-function renderHistory(){let box=$("historyList"),h=getHistory();box.innerHTML=h.length?h.slice(0,12).map((s,i)=>{let isToday=s.date===todayText();let hint=isToday?"按「繼續」可載入繼續訓練":"已過日期，只保留紀錄與刪除";let continueHtml=isToday?`<button class="navBtn continueBtn" onclick="event.stopPropagation();resumeHistory(${i})">繼續</button>`:"";return `<div class="historyItem" title="${hint}"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><b>${fitEsc(s.date)}｜${fitEsc(s.workout)}</b><div class="small">${fmtRead(s.totalSec||0)}｜${(s.logs||[]).length} 組｜${hint}</div></div><div class="historyActions">${continueHtml}<button class="navBtn ghost" onclick="event.stopPropagation();deleteHistory(${i})">刪除</button></div></div></div>`}).join(""):'<div class="empty">尚無歷史紀錄</div>'}
+function renderHistory(){let box=$("historyList"),h=getHistory();box.innerHTML=h.length?h.slice(0,12).map((s,i)=>{let isToday=s.date===todayText();let hint=isToday?"按「繼續」可載入繼續訓練":"已過日期，只保留紀錄與刪除";let continueHtml=isToday?`<button class="navBtn continueBtn" onclick="event.stopPropagation();resumeHistory(${i})">繼續</button>`:"";let autoLabel=s.autoEnded?"｜自動結束":"";return `<div class="historyItem" title="${hint}"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><b>${fitEsc(s.date)}｜${fitEsc(s.workout)}</b><div class="small">${fmtRead(s.totalSec||0)}｜${(s.logs||[]).length} 組${autoLabel}｜${hint}</div></div><div class="historyActions">${continueHtml}<button class="navBtn ghost" onclick="event.stopPropagation();deleteHistory(${i})">刪除</button></div></div></div>`}).join(""):'<div class="empty">尚無歷史紀錄</div>'}
 function renderFitnessAll(){fitUpdateStage();renderWorkoutButtons();renderExerciseList();renderHistory();fitTickRender();fitUpdateButtons()}
 function fitSessionSec(){let base=Math.max(0,Math.round(parseFloat(fitState.sessionBaseSec||0)||0));let live=fitState.sessionStart?Math.max(0,Math.round((new Date()-new Date(fitState.sessionStart))/1000)):0;return base+live}
 function sumMove(){return fitState.logs.reduce((a,b)=>a+(b.moveSec||0),0)+(fitState.status==="moving"&&fitState.moveStart?Math.round((new Date()-new Date(fitState.moveStart))/1000):0)}
@@ -663,6 +699,7 @@ function sumRest(){return fitState.logs.reduce((a,b)=>a+(b.restSec||0),0)+(fitSt
 function fitDoneSetCount(){return fitState.logs.filter(l=>l.set!=="有氧").length}
 function fitTickRender(){
   if(!$("fitnessView")||$("fitnessView").classList.contains("hide"))return;
+  if(fitCheckAutoEnd())return;
   let w=getWorkout(),ex=getExercise();
   $("fitnessTodayPill").textContent="今天 "+todayText();
   $("currentWorkoutLabel").textContent=w?w.label:"尚未選擇";
@@ -682,6 +719,7 @@ function fitTickRender(){
   $("setTotal").textContent=fitState.logs.length;
   let sets=fitGetSets(ex);
   $("setBadge").textContent=ex?(sets?`第 ${fitState.currentSet} / ${sets} 組`:"有氧/時間制"):"尚未開始";
+  fitApplyActualSuggestion(false);
   $("restTargetText").textContent="休息目標："+fmt(fitState.restTargetSec);
   let moveSec=fitState.status==="moving"&&fitState.moveStart?Math.round((new Date()-new Date(fitState.moveStart))/1000):0;
   let restSec=fitState.status==="resting"&&fitState.restStart?Math.round((new Date()-new Date(fitState.restStart))/1000):0;
@@ -769,14 +807,67 @@ function finishMove(){if(fitState.status!=="moving"){alert("請先開始本組�
 function fitPushPending(restSec,restEndedAt){if(!fitState.pendingLog)return;let log={...fitState.pendingLog,restSec,restEndedAt:restEndedAt||fitNowISO()};fitState.logs.push(log);fitState.pendingLog=null;fitState.restStart=null;fitState.status="idle";clearFitInputs();let ex=getExercise(),sets=fitGetSets(ex);if(sets&&fitState.currentSet>=sets){fitState.completedExercises[fitState.exerciseIndex]=true;fitState.screen="exercises";toast(ex.name+" 已完成，請選下一個動作")}else{fitState.currentSet++;toast("準備第 "+fitState.currentSet+" 組")}}
 function finishRest(){if(fitState.status!=="resting"||!fitState.pendingLog){alert("目前沒有休息中的組數");return}let now=fitNowISO(),restSec=Math.max(0,Math.round((new Date(now)-new Date(fitState.restStart))/1000));fitPushPending(restSec,now);saveCurrent();renderFitnessAll();if(fitState.screen==="exercises")setTimeout(()=>window.scrollTo(0,0),60)}
 function skipRest(){if(fitState.status!=="resting"||!fitState.pendingLog){alert("目前沒有休息中的組數");return}fitPushPending(0,fitNowISO());saveCurrent();renderFitnessAll();if(fitState.screen==="exercises")setTimeout(()=>window.scrollTo(0,0),60)}
-function clearFitInputs(){$("actualInput").value="";$("setNoteInput").value="";$("moveTimer").textContent="00:00";$("restTimer").textContent="00:00"}
+function clearFitInputs(){fitLastAutoActual="";$("actualInput").value="";$("setNoteInput").value="";$("moveTimer").textContent="00:00";$("restTimer").textContent="00:00"}
 function fitAutoNextExercise(){let w=getWorkout();if(!w)return;fitState.screen="exercises"}
 function fitBuildCompletedFromLogs(w,logs){let done={};if(!w)return done;(w.exercises||[]).forEach((ex,i)=>{let sets=fitGetSets(ex),count=(logs||[]).filter(l=>l.exercise===ex.name).length;if((sets===0&&count>0)||(sets>0&&count>=sets))done[i]=true});return done}
 function resumeHistory(i){let h=getHistory(),s=h[i];if(!s)return;if(fitState.status==="moving"||fitState.status==="resting"){alert("目前正在計時，請先完成本組或休息。");return}if((fitState.logs||[]).length&&!confirm("目前本次訓練已有紀錄，載入歷史紀錄會覆蓋目前未儲存內容，確定繼續？"))return;if(s.date!==todayText()&&!confirm("這不是今天的紀錄，也要載入繼續嗎？"))return;let w=WORKOUTS.find(x=>x.id===s.workoutId)||WORKOUTS.find(x=>x.label===s.workout)||WORKOUTS.find(x=>x.short===s.workout);if(!w){alert("找不到這筆紀錄對應的訓練部位，無法載入。請確認訓練部位名稱沒有被刪除或改名。");return}h.splice(i,1);saveHistory(h);fitState=fitDefaultState();fitState.workoutId=w.id;fitState.screen="exercises";fitState.sessionBaseSec=Math.max(0,Math.round(parseFloat(s.totalSec||0)||0));fitState.sessionStart=null;fitState.sessionFirstStart=s.startedAt||fitNowISO();fitState.logs=Array.isArray(s.logs)?s.logs:[];fitState.completedExercises=s.completedExercises||fitBuildCompletedFromLogs(w,fitState.logs);fitState.exerciseIndex=0;fitState.currentSet=1;fitState.status="idle";fitState.moveStart=null;fitState.restStart=null;fitState.pendingLog=null;let first=w.exercises&&w.exercises[0];fitState.restTargetSec=fitGetRestSec(first)||60;saveCurrent();renderFitnessAll();toast("已載入紀錄，可繼續選動作訓練；離開期間不會列入總時間")}
 function completeExercise(){let ex=getExercise();if(!ex)return;if(fitState.status==="moving"&&!confirm("目前動作計時中，確定要完成/跳過此動作？"))return;if(fitState.status==="resting"&&fitState.pendingLog){if(confirm("目前正在休息，要先把這一組存起來嗎？")){finishRest();return}}fitState.completedExercises[fitState.exerciseIndex]=true;fitState.status="idle";fitState.moveStart=null;fitState.restStart=null;fitState.pendingLog=null;fitState.screen="exercises";saveCurrent();renderFitnessAll();setTimeout(()=>window.scrollTo(0,0),60);toast("已完成/跳過，請選下一個動作")}
 function setRestTarget(s){fitState.restTargetSec=Math.max(0,s);saveCurrent();fitTickRender();toast("休息目標改成 "+fmt(fitState.restTargetSec))}
 function adjustRestTarget(delta){setRestTarget(Math.max(0,(fitState.restTargetSec||0)+delta))}
-function saveSession(){let w=getWorkout();if(fitState.status==="moving")return alert("動作還在計時，請先完成本組。");if(fitState.status==="resting")return alert("休息還在計時，請先完成休息。");if(!w||!fitState.logs.length){alert("目前沒有可儲存的訓練紀錄");return}let started=fitState.sessionFirstStart||fitState.sessionStart||fitNowISO(),ended=fitNowISO(),total=fitSessionSec();let session={id:"fit_"+Date.now(),date:todayText(),workout:w.label,workoutId:w.id,startedAt:started,endedAt:ended,totalSec:total,logs:fitState.logs,completedExercises:fitState.completedExercises||{}};let h=getHistory();h.unshift(session);saveHistory(h);resetCurrentSession(false);toast("訓練已儲存；若還沒做完，可到歷史訓練紀錄按繼續");renderFitnessAll()}
+function fitSessionEndAt(started,totalSec){let ms=new Date(started).getTime();if(!Number.isFinite(ms))return fitNowISO();return new Date(ms+Math.max(0,totalSec||0)*1000).toISOString()}
+function fitAutoFinalizeActiveGroup(){
+  let ex=getExercise();
+  if(!ex)return;
+  let sessionStartMs=new Date(fitState.sessionStart||fitState.sessionFirstStart||fitNowISO()).getTime();
+  if(!Number.isFinite(sessionStartMs))sessionStartMs=Date.now();
+  let autoEndMs=sessionStartMs+FIT_AUTO_END_SEC*1000;
+  if(fitState.status==="moving"&&fitState.moveStart){
+    let moveStartMs=new Date(fitState.moveStart).getTime();
+    let moveEndMs=Math.min(Date.now(),autoEndMs);
+    let moveSec=Math.max(1,Math.round((moveEndMs-moveStartMs)/1000));
+    let actual=($("actualInput")&&$("actualInput").value.trim())||fitSuggestedActual(ex,fitState.currentSet)||ex.plan||"";
+    let note=($("setNoteInput")&&$("setNoteInput").value.trim())||"系統超過 1.5 小時自動結束";
+    if(fitGetSets(ex)===0){
+      fitState.logs.push({exercise:ex.name,set:"有氧",planned:ex.plan||"",actual,note,moveSec,restSec:0,restTargetSec:0,startedAt:fitState.moveStart,endedAt:new Date(moveEndMs).toISOString()});
+      fitState.completedExercises[fitState.exerciseIndex]=true;
+    }else{
+      fitState.logs.push({exercise:ex.name,set:fitState.currentSet,planned:ex.plan||"",actual,note,moveSec,restSec:0,restTargetSec:fitState.restTargetSec,startedAt:fitState.moveStart,endedAt:new Date(moveEndMs).toISOString(),restStartedAt:"",restEndedAt:""});
+    }
+    fitState.status="idle";fitState.moveStart=null;fitState.restStart=null;fitState.pendingLog=null;
+    return;
+  }
+  if(fitState.status==="resting"&&fitState.pendingLog){
+    let restStartMs=new Date(fitState.restStart||fitState.pendingLog.restStartedAt||fitNowISO()).getTime();
+    let restEndMs=Math.min(Date.now(),autoEndMs);
+    let restSec=Math.max(0,Math.round((restEndMs-restStartMs)/1000));
+    fitState.logs.push({...fitState.pendingLog,restSec,restEndedAt:new Date(restEndMs).toISOString(),note:fitState.pendingLog.note||"系統超過 1.5 小時自動結束"});
+    fitState.pendingLog=null;fitState.status="idle";fitState.moveStart=null;fitState.restStart=null;
+  }
+}
+function saveSessionCore(auto=false){
+  let w=getWorkout();
+  if(!w||!fitState.logs.length)return false;
+  let started=fitState.sessionFirstStart||fitState.sessionStart||fitNowISO();
+  let total=auto?FIT_AUTO_END_SEC:fitSessionSec();
+  let ended=auto?fitSessionEndAt(started,total):fitNowISO();
+  let session={id:"fit_"+Date.now(),date:todayText(),workout:w.label,workoutId:w.id,startedAt:started,endedAt:ended,totalSec:total,logs:fitState.logs,completedExercises:fitState.completedExercises||{},autoEnded:!!auto};
+  let h=getHistory();h.unshift(session);saveHistory(h);resetCurrentSession(false);
+  toast(auto?"已超過 1.5 小時，系統已自動結束並儲存":"訓練已儲存；若還沒做完，可到歷史訓練紀錄按繼續");
+  renderFitnessAll();
+  return true;
+}
+function fitCheckAutoEnd(){
+  if(fitAutoSaving)return false;
+  if(!fitState.sessionStart&&!fitState.sessionFirstStart)return false;
+  if(fitSessionSec()<FIT_AUTO_END_SEC)return false;
+  fitAutoSaving=true;
+  try{
+    if(fitState.status==="moving"||fitState.status==="resting")fitAutoFinalizeActiveGroup();
+    if(fitState.logs.length){saveSessionCore(true)}else{resetCurrentSession(false);toast("已超過 1.5 小時，系統已自動結束")}
+  }finally{fitAutoSaving=false;}
+  return true;
+}
+function saveSession(){if(fitState.status==="moving")return alert("動作還在計時，請先完成本組。");if(fitState.status==="resting")return alert("休息還在計時，請先完成休息。");if(!getWorkout()||!fitState.logs.length){alert("目前沒有可儲存的訓練紀錄");return}saveSessionCore(false)}
 function resetCurrentSession(confirmIt=true){if(confirmIt&&!confirm("確定清空本次訓練紀錄？歷史紀錄不會刪除。"))return;localStorage.removeItem(LS_CURRENT);fitState=fitDefaultState();saveCurrent();renderFitnessAll()}
 function fitnessBackWorkout(){if(fitState.status==="moving"||fitState.status==="resting")return alert("目前正在計時，請先完成本組或休息。");fitState.screen="workout";saveCurrent();renderFitnessAll()}
 function fitnessBackExercise(){if(fitState.status==="moving"||fitState.status==="resting")return alert("目前正在計時，請先完成本組或休息。");if(!getWorkout()){fitState.screen="workout"}else{fitState.screen="exercises"}saveCurrent();renderFitnessAll()}
@@ -784,7 +875,7 @@ function openWorkoutEditor(id=null){let isEdit=!!id,w=isEdit?WORKOUTS.find(x=>x.
 function openExerciseEditor(index=null){let w=getWorkout();if(!w){alert("請先選部位");return}let isEdit=index!==null&&index!==undefined,ex=isEdit?w.exercises[index]:null;let name=prompt(isEdit?"修改動作名稱":"動作名稱",ex?.name||"");if(name===null)return;name=name.trim();if(!name)return;let plan=prompt("計畫重量/次數",ex?.plan||"");if(plan===null)return;let setsRaw=prompt("組數；有氧請填 0",ex?.sets??3);if(setsRaw===null)return;let sets=Math.max(0,parseInt(setsRaw,10)||0);let restRaw=prompt("休息秒數",ex?.restSec??60);if(restRaw===null)return;let restSec=Math.max(0,parseInt(restRaw,10)||0);let note=prompt("備註，可空白",ex?.note||"");if(note===null)return;let item={name,plan:plan.trim(),sets,rest:sets?fitRestLabel(restSec):"–",restSec:sets?restSec:0,note:note.trim()};if(sets===0)item.type="cardio";if(isEdit){w.exercises[index]=item}else{w.exercises.push(item);fitState.exerciseIndex=w.exercises.length-1}saveWorkouts();saveCurrent();renderFitnessAll();toast(isEdit?"已修改動作":"已新增動作")}
 function fitnessExportCSV(){let rows=[["紀錄ID","日期","訓練部位","訓練開始","訓練結束","總秒數","總時間","動作","組數","計畫重量/次數","實做","動作秒數","動作時間","休息秒數","休息時間","休息目標秒數","休息目標","備註"]];getHistory().forEach(s=>(s.logs||[]).forEach(l=>rows.push([s.id,s.date,s.workout,s.startedAt,s.endedAt,s.totalSec,fmtRead(s.totalSec),l.exercise,l.set,l.planned,l.actual,l.moveSec,fmtRead(l.moveSec),l.restSec,fmtRead(l.restSec),l.restTargetSec,fmt(l.restTargetSec),l.note])));if(fitState.logs.length){let w=getWorkout();fitState.logs.forEach(l=>rows.push(["CURRENT",todayText(),w?w.label:"本次未儲存",fitState.sessionStart,"",fitSessionSec(),fmtRead(fitSessionSec()),l.exercise,l.set,l.planned,l.actual,l.moveSec,fmtRead(l.moveSec),l.restSec,fmtRead(l.restSec),l.restTargetSec,fmt(l.restTargetSec),l.note]))}csvDownload(`健身紀錄_${todayText().replaceAll("-","")}.csv`,rows)}
 
-function initFitnessCloud(){fitnessRef.on("value",snap=>{let data=snap.val();if(data&&(data.workouts||data.history||data.current)){fitnessCloudData=data;fitnessCloudReady=true;fitApplyData(data);if(fitInited)renderFitnessAll()}else{let seed=fitLocalSeed();fitnessCloudData={workouts:seed.workouts,history:seed.history,current:fitSanitizeState(seed.current),version:"suite-v1.7-fitness"};fitnessCloudReady=true;fitnessRef.set({...fitnessCloudData,updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>{console.error(e);setCloudStatus("fitness",false,"健身雲端初始化失敗，請檢查 Firebase 規則")});fitApplyData(fitnessCloudData);if(fitInited)renderFitnessAll()}},err=>{console.error(err);setCloudStatus("fitness",false,"健身 Firebase 讀取失敗")})}
+function initFitnessCloud(){fitnessRef.on("value",snap=>{let data=snap.val();if(data&&(data.workouts||data.history||data.current)){fitnessCloudData=data;fitnessCloudReady=true;fitApplyData(data);if(fitInited)renderFitnessAll()}else{let seed=fitLocalSeed();fitnessCloudData={workouts:seed.workouts,history:seed.history,current:fitSanitizeState(seed.current),version:"suite-v1.8-fitness"};fitnessCloudReady=true;fitnessRef.set({...fitnessCloudData,updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>{console.error(e);setCloudStatus("fitness",false,"健身雲端初始化失敗，請檢查 Firebase 規則")});fitApplyData(fitnessCloudData);if(fitInited)renderFitnessAll()}},err=>{console.error(err);setCloudStatus("fitness",false,"健身 Firebase 讀取失敗")})}
 
 /* ===== VOCAB ===== */
 const VN_WORDS="yu_vn_words_v1",VN_DAILY="yu_vn_daily_v1",VN_TTS_LOG="yu_vn_tts_log_v1";
