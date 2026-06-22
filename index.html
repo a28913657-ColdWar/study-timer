@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>Yu工具箱_三合一_V4.3</title>
+<title>Yu工具箱_二合一_V5</title>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
@@ -14,27 +14,34 @@
   --bg:#0b1020;--card:#141b2f;--card2:#101729;--line:#27324d;--text:#f6f7fb;--muted:#aeb8d0;
   --blue:#7dd3fc;--purple:#c4b5fd;--green:#86efac;--yellow:#fde68a;--red:#fca5a5;
   --orange:#ffad66;--orange2:#ff8b3d;--shadow:0 18px 50px rgba(0,0,0,.35);--r:22px;
+  --field:#0e1527;--button:#1c2540;--buttonHover:#24304f;--table:#0f172a;--tableHead:#1e293b;
+  --pageBg:linear-gradient(160deg,#080c18 0%,#0b1020 52%,#111827 100%);
+}
+:root[data-theme="light"]{
+  --bg:#f6f8fb;--card:#ffffff;--card2:#eef4f7;--line:#d6e0ea;--text:#152033;--muted:#66758a;
+  --blue:#0284c7;--purple:#7c3aed;--green:#16a34a;--yellow:#a16207;--red:#dc2626;
+  --orange:#f97316;--orange2:#ea580c;--shadow:0 16px 42px rgba(25,38,58,.12);
+  --field:#ffffff;--button:#edf3f8;--buttonHover:#e0ebf3;--table:#ffffff;--tableHead:#eaf3fb;
+  --pageBg:linear-gradient(160deg,#f7fbff 0%,#eef7f4 48%,#f9f6ee 100%);
 }
 *{box-sizing:border-box}
 html,body{min-height:100%}
 body{
   margin:0;
-  background:
-    radial-gradient(circle at top left,rgba(76,111,255,.22),transparent 34%),
-    radial-gradient(circle at bottom right,rgba(103,232,249,.12),transparent 32%),
-    linear-gradient(160deg,#080c18 0%,#0b1020 50%,#111827 100%);
+  background:var(--pageBg);
   color:var(--text);
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC","Microsoft JhengHei",Arial,sans-serif;
+  transition:background .2s,color .2s;
 }
 button,input,textarea,select{font:inherit}
 button{
   border:1px solid rgba(255,255,255,.12);
-  background:#1c2540;color:var(--text);
+  background:var(--button);color:var(--text);
   border-radius:16px;padding:12px 14px;cursor:pointer;
   transition:.15s transform,.15s background,.15s border,.15s opacity;
   font-weight:800;
 }
-button:hover:not(:disabled){transform:translateY(-1px);background:#24304f}
+button:hover:not(:disabled){transform:translateY(-1px);background:var(--buttonHover)}
 button:disabled{opacity:.45;cursor:not-allowed;transform:none}
 button.primary{background:linear-gradient(135deg,#0ea5e9,#8b5cf6);border:none}
 button.good{background:rgba(34,197,94,.18);border-color:rgba(134,239,172,.5)}
@@ -42,7 +49,7 @@ button.warn{background:rgba(234,179,8,.17);border-color:rgba(253,230,138,.5)}
 button.danger{background:rgba(239,68,68,.18);border-color:rgba(252,165,165,.5)}
 button.ghost{background:transparent}
 input,textarea,select{
-  width:100%;background:#0e1527;border:1px solid rgba(255,255,255,.14);
+  width:100%;background:var(--field);border:1px solid rgba(255,255,255,.14);
   color:var(--text);border-radius:14px;padding:12px 13px;outline:none;
 }
 textarea{min-height:110px;resize:vertical;line-height:1.65}
@@ -66,13 +73,20 @@ hr{border:0;border-top:1px solid rgba(255,255,255,.09);margin:18px 0}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 .navBtn{border-radius:999px;padding:9px 12px;font-size:13px}
 .makerFooter{text-align:center;color:var(--muted);font-size:12px;letter-spacing:.5px;opacity:.85;margin-top:16px}
+.themeFab{position:fixed;right:14px;top:14px;z-index:40;border-radius:999px;padding:9px 13px;font-size:13px;box-shadow:var(--shadow);backdrop-filter:blur(10px)}
+.small-buttons{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}
+.small-buttons button{padding:9px 12px;font-size:13px;border-radius:999px}
 
 /* Home */
 .homeWrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:22px 14px}
-.homeCard{width:min(880px,94vw)}
+.homeCard{width:min(760px,94vw)}
 .pinBox{display:grid;grid-template-columns:1fr auto;gap:10px;margin-top:14px}
 .pinBoxAuto{grid-template-columns:1fr}
-.toolGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px}
+.loginPanel{max-width:420px;margin:16px auto 0}
+.loginActions{display:grid;grid-template-columns:1fr auto;gap:10px;margin-top:10px}
+.toolMenuHeader{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:4px}
+.suiteBadge{display:inline-flex;align-items:center;border:1px solid rgba(125,211,252,.22);background:rgba(125,211,252,.1);color:#dff7ff;border-radius:999px;padding:8px 11px;font-size:13px;font-weight:800}
+.toolGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:18px}
 .toolCard{padding:20px;border-radius:24px;background:rgba(16,23,41,.75);border:1px solid rgba(255,255,255,.1);cursor:pointer;transition:.15s;min-height:150px}
 .toolCard:hover{transform:translateY(-2px);border-color:rgba(125,211,252,.45);background:rgba(125,211,252,.08)}
 .toolIcon{font-size:34px;margin-bottom:10px}
@@ -108,6 +122,8 @@ hr{border:0;border-top:1px solid rgba(255,255,255,.09);margin:18px 0}
 .timerBtns button{font-size:22px;padding:16px}
 .timerCheckpointRow{display:grid;grid-template-columns:1fr;gap:10px;margin:-4px 0 14px}
 .timerCheckpointRow button{font-size:18px;padding:14px}
+.timerPresetRow{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0 0 14px}
+.timerPresetRow button{padding:10px 12px;border-radius:999px;font-size:13px}
 #timerStartBtn{background:linear-gradient(135deg,#16a34a,#22c55e);border:none}
 #timerPauseBtn{background:linear-gradient(135deg,#dc2626,#f97316);border:none}
 .tableWrap{overflow-x:auto;border-radius:14px}
@@ -154,112 +170,74 @@ tr:last-child td{border-bottom:none}
 .finishCard{border-color:rgba(134,239,172,.42);box-shadow:0 0 0 1px rgba(134,239,172,.16),var(--shadow)}
 .finishSaveBox{display:flex;align-items:center;justify-content:space-between;gap:14px;background:linear-gradient(135deg,rgba(34,197,94,.18),rgba(14,165,233,.12))}
 .finishTitle{font-size:18px;font-weight:900;margin-bottom:4px}.finishBig{font-size:18px;padding:16px 22px;border-radius:18px;min-width:210px}
-.vnVoiceSettings{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;width:100%;margin:2px 0 14px;text-align:left}
-.vnMiniCheck,.vnStepper{display:inline-flex!important;align-items:center;gap:7px;background:#151925;border:1px solid #343b4d;color:#f5f1eb;border-radius:999px;padding:8px 10px!important;min-height:38px;user-select:none;font-size:14px!important;margin:0!important;white-space:nowrap}
-.vnMiniCheck input{width:18px!important;height:18px!important;margin:0!important;accent-color:#ffad66;box-shadow:none!important;flex:0 0 auto}
-.vnStepperLabel{color:#a9acb8;font-size:13px;line-height:1}
-.vnStepperValue{min-width:74px;text-align:center;font-weight:800;color:#f5f1eb}
-.vnStepperBtn{width:28px;height:28px;border-radius:999px!important;padding:0!important;margin:0!important;display:inline-flex;align-items:center;justify-content:center;background:#2d3345!important;color:#f5f1eb!important;border:1px solid #343b4d!important;font-size:13px!important;line-height:1}
 .finishSaveOnly{justify-content:center}.finishSaveOnly .finishBig{width:min(100%,360px);min-width:0}
 .exerciseSaveBar{display:flex;justify-content:center;align-items:center;margin:-2px 0 14px}
 .finishOrangeBtn{width:100%;font-size:18px!important;padding:15px 20px!important;border-radius:20px!important;background:linear-gradient(135deg,#ff8a00,#ffb000)!important;color:#1b120b!important;border:1px solid rgba(255,220,120,.55)!important;box-shadow:0 14px 30px rgba(255,138,0,.24);}
 .finishOrangeBtn:hover:not(:disabled){background:linear-gradient(135deg,#ff9500,#ffc233)!important;transform:translateY(-1px)}
-@media(max-width:760px){.finishSaveBox{display:grid}.finishBig{width:100%;min-width:0}.vnVoiceSettings{justify-content:flex-start}.vnStepperValue{min-width:68px}}
-
-/* Vocab */
-.vnWrap{max-width:900px}
-.vnTop{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
-.vnRow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
-.vnReview{min-height:calc(100vh - 90px);display:flex;align-items:center;justify-content:center}
-.reviewCard{width:min(720px,94vw);background:rgba(31,36,48,.96);border:1px solid var(--line);border-radius:30px;padding:26px;box-shadow:0 28px 70px rgba(0,0,0,.36);text-align:center}
-.reviewTop{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap}
-.question{font-size:44px;font-weight:900;line-height:1.25;word-break:break-word;margin:18px 0 12px}
-.questionNote{min-height:26px;color:#d8bd8a;font-size:15px;line-height:1.5;margin-bottom:12px}
-.answer{max-width:500px;margin:0 auto;text-align:center;font-size:20px;padding:16px}
-.result{min-height:78px;font-size:58px;margin:10px 0 0}
-.ok{color:var(--green)}.bad{color:var(--red)}
-.answerHint{color:var(--muted);min-height:28px;line-height:1.5;font-size:16px}
-.completionBanner{margin:12px auto 8px;max-width:560px;border:1px solid rgba(255,173,102,.55);background:rgba(255,173,102,.12);color:#ffe2c4;border-radius:18px;padding:14px 16px;line-height:1.7;font-weight:800;font-size:17px;box-shadow:0 12px 28px rgba(0,0,0,.18)}
-.wordListBox,.recordBox{max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:18px;background:#121621;margin-top:10px}
-.noteInput{min-width:140px;border-radius:10px;padding:9px 10px;font-size:14px;background:#0d111b}
-.rateInput{width:74px!important;min-width:74px!important;padding:6px 8px!important;border-radius:10px!important;text-align:center;font-size:14px!important;background:#0d111b!important}
+@media(max-width:760px){.finishSaveBox{display:grid}.finishBig{width:100%;min-width:0}}
+.fitnessGuide{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.guideStep{border:1px solid rgba(125,211,252,.18);background:rgba(125,211,252,.08);border-radius:16px;padding:12px}
+.guideStep b{display:block;font-size:15px;margin-bottom:4px}
+.quickRestGrid{display:flex;gap:8px;flex-wrap:wrap}
+.secondaryBtn{background:rgba(125,211,252,.12)!important;border-color:rgba(125,211,252,.35)!important}
 .toast{position:fixed;left:50%;bottom:82px;transform:translateX(-50%);background:#e5f9ff;color:#0b1020;border-radius:999px;padding:10px 15px;font-size:14px;font-weight:800;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:.2s;z-index:30}
 .toast.show{opacity:1;bottom:96px}
-
-
-/* Vocab V16 style alignment */
-#vocabView .card{background:rgba(31,36,48,.94);border:1px solid #343b4d;border-radius:24px;box-shadow:0 18px 50px rgba(0,0,0,.28);}
-#vocabView .section{padding:20px;}
-#vocabView h2{font-size:18px;}
-#vocabView label{color:#a9acb8;font-size:14px;}
-#vocabView input,#vocabView textarea,#vocabView select{background:#121621;border:1px solid #343b4d;color:#f5f1eb;border-radius:16px;}
-#vocabView input:focus,#vocabView textarea:focus,#vocabView select:focus{border-color:#ffad66;box-shadow:0 0 0 4px rgba(255,173,102,.13)}
-#vocabView button{border:0;border-radius:999px;padding:12px 18px;background:linear-gradient(135deg,#ffad66,#ff8b3d);color:#1b120b;font-weight:800;}
-#vocabView button.ghost,#vocabView button.secondary{background:#2d3345;color:#f5f1eb;border:1px solid #343b4d;}
-#vocabView button.danger{background:#3a2028;color:#ffd8df;border:1px solid #6b2c39;}
-#vocabView .vocabStartBtn{font-size:18px;padding:14px 26px;min-width:180px;}
-#vocabView .pill{background:#151925;border:1px solid #343b4d;color:#a9acb8;}
-#vocabView .sectionHead{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px;}
-#vocabView .sectionHead h2{margin:0;}
-#vocabView .foldBtn{margin:0;padding:8px 13px;font-size:13px;background:#2d3345!important;color:#f5f1eb!important;border:1px solid #343b4d!important;}
-#vocabView .sectionBody.collapsed{display:none;}
-#vocabView .vocabRecordActions{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;}
-#vocabView .wordListBox{max-height:360px;overflow:auto;border:1px solid #343b4d;border-radius:18px;background:#121621;margin-top:10px;}
-#vocabView .recordBox{max-height:260px;overflow:auto;border:1px solid #343b4d;border-radius:18px;background:#121621;margin-top:10px;}
-#vocabView .wordListBox table,#vocabView .recordBox table{font-size:15px;background:#121621;border-collapse:collapse;}
-#vocabView .wordListBox th,#vocabView .wordListBox td,#vocabView .recordBox th,#vocabView .recordBox td{padding:10px 10px;border-bottom:1px solid #343b4d;text-align:left;vertical-align:middle;line-height:1.45;white-space:normal;color:#f5f1eb;}
-#vocabView .wordListBox th,#vocabView .recordBox th{color:#cbd5ff;background:#171c29;position:sticky;top:0;z-index:2;}
-#vocabView .wordListBox tr:last-child td,#vocabView .recordBox tr:last-child td{border-bottom:0;}
-#vocabView .noteInput{width:100%;min-width:150px;border-radius:10px;padding:9px 10px;font-size:14px;background:#0d111b;}
-#vocabView .wordStatus{display:inline-flex;align-items:center;justify-content:center;min-width:52px;border-radius:999px;padding:5px 8px;font-size:12px;font-weight:800;white-space:nowrap;}
-#vocabView .wordStatus.new{background:rgba(255,173,102,.16);color:#ffd6ad;border:1px solid rgba(255,173,102,.45);}
-#vocabView .wordStatus.old{background:#151925;color:#a9acb8;border:1px solid #343b4d;}
-#vocabView .deleteSmall{margin:0;padding:7px 10px;font-size:13px;white-space:nowrap;}
-#vocabView .reviewCard{background:rgba(31,36,48,.96);border:1px solid #343b4d;}
-#vocabView .answer{background:#121621;}
-#vocabView .questionHidden{font-size:34px;color:#cbd5ff;letter-spacing:.02em;}
 .historyActions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.historyActions button{padding:7px 10px;font-size:12px;border-radius:999px;}
+:root[data-theme="light"] button{border-color:rgba(28,52,72,.16)}
+:root[data-theme="light"] input,:root[data-theme="light"] textarea,:root[data-theme="light"] select{border-color:rgba(28,52,72,.18)}
+:root[data-theme="light"] .card{background:rgba(255,255,255,.94);border-color:rgba(28,52,72,.12)}
+:root[data-theme="light"] .toolCard,:root[data-theme="light"] .workoutCard,:root[data-theme="light"] .exercise,:root[data-theme="light"] .fitStat,:root[data-theme="light"] .statCard,:root[data-theme="light"] .fitTimer,:root[data-theme="light"] .historyItem{background:rgba(255,255,255,.82);border-color:rgba(28,52,72,.13)}
+:root[data-theme="light"] .suiteBadge,:root[data-theme="light"] .pill{background:#e8f6fb;color:#075985;border-color:#bae6fd}
+:root[data-theme="light"] .phase span{background:#e0f2fe;color:#075985;border-color:#bae6fd}
+:root[data-theme="light"] .circle-bg{stroke:#e5edf3}
+:root[data-theme="light"] .timeBig{color:#152033;text-shadow:none}
+:root[data-theme="light"] table{background:var(--table)}
+:root[data-theme="light"] th{background:var(--tableHead);color:#155e75}
+:root[data-theme="light"] td{color:#253348;border-bottom-color:#dce6ee}
+:root[data-theme="light"] .logTable td{background:#f8fbfd;border-color:#dce6ee}
+:root[data-theme="light"] .empty{border-color:#cbd8e3}
+:root[data-theme="light"] .restRoundBtn{background:#e7e1ff!important;border-color:#cabfff!important;color:#231942!important}
 
-@media(max-width:900px){.toolGrid,.fitLayout{grid-template-columns:1fr}.statusBar{grid-template-columns:1fr 1fr}.timerBox,.grid3,.grid2,.vnRow{grid-template-columns:1fr}}
-@media(max-width:560px){.timerInfoRow{gap:8px}.phase span{font-size:14px;padding:7px 10px}.timerTotal{font-size:13px}.progress-ring{width:210px;height:210px}.progress-ring svg{width:210px;height:210px}.timeBig{font-size:38px}.app{padding:16px 12px 60px}.topbar,.vnTop{flex-direction:column}.timerSettings,.todayBox,.timerBtns,.pinBox{grid-template-columns:1fr}.reviewTop{justify-content:center}.reviewCard{padding:20px}.question{font-size:34px}.statusBar{grid-template-columns:1fr}}
+@media(max-width:900px){.toolGrid,.fitLayout,.fitnessGuide{grid-template-columns:1fr}.statusBar{grid-template-columns:1fr 1fr}.timerBox,.grid3,.grid2{grid-template-columns:1fr}}
+@media(max-width:560px){.themeFab{right:10px;top:10px}.timerInfoRow{gap:8px}.phase span{font-size:14px;padding:7px 10px}.timerTotal{font-size:13px}.progress-ring{width:210px;height:210px}.progress-ring svg{width:210px;height:210px}.timeBig{font-size:38px}.app{padding:16px 12px 60px}.topbar{flex-direction:column}.timerSettings,.todayBox,.timerBtns,.timerPresetRow,.pinBox,.loginActions{grid-template-columns:1fr}.statusBar{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <div id="toast" class="toast"></div>
+<button id="themeToggle" class="themeFab" onclick="toggleTheme()" type="button">日間</button>
 
 <!-- HOME -->
 <section id="homeView" class="homeWrap">
   <div class="card homeCard">
     <div class="section">
       <div class="title">
-        <h1>Yu工具箱 V4.3</h1>
+        <h1>Yu工具箱 V5</h1>
+        <p>計時器與健身紀錄</p>
       </div>
-      <div id="lockBox">
+      <div id="lockBox" class="loginPanel">
         <label>密碼 / PIN</label>
-        <div class="pinBox pinBoxAuto">
-          <input id="globalPinInput" type="password" inputmode="numeric" placeholder="輸入 PIN，正確後自動進入" maxlength="8" oninput="autoUnlockSuite()" />
+        <input id="globalPinInput" type="password" inputmode="numeric" placeholder="輸入 PIN" maxlength="8" oninput="autoUnlockSuite()" />
+        <div class="loginActions">
+          <button class="primary" onclick="unlockSuite()" type="button">登入</button>
+          <button class="ghost" onclick="togglePinVisible()" type="button" id="pinVisibleBtn">顯示</button>
         </div>
         <div id="globalPinMsg" class="small"></div>
       </div>
       <div id="toolMenu" class="hide">
-        <div class="row" style="justify-content:flex-end;margin-top:4px">
+        <div class="toolMenuHeader">
+          <span class="suiteBadge">已登入</span>
           <button class="navBtn ghost" onclick="lockSuite()">鎖定</button>
         </div>
         <div class="toolGrid">
           <div class="toolCard" onclick="openTool('timer')">
             <div class="toolIcon">⏱️</div>
             <div class="toolTitle">計時器</div>
-            <div class="toolDesc">雲端同步學習計時、每日累計、輸出 Excel。</div>
+            <div class="toolDesc">專注、休息、今日累計與 Excel 匯出。</div>
           </div>
           <div class="toolCard" onclick="openTool('fitness')">
             <div class="toolIcon">🏋️</div>
             <div class="toolTitle">健身</div>
-            <div class="toolDesc">雲端同步訓練部位、動作、組數、休息時間與歷史紀錄。</div>
-          </div>
-          <div class="toolCard" onclick="openTool('vocab')">
-            <div class="toolIcon">🇻🇳</div>
-            <div class="toolTitle">越南文單字複習</div>
-            <div class="toolDesc">雲端同步新單字優先複習、錯題循環、每日複習紀錄。</div>
+            <div class="toolDesc">部位、動作、組數、休息與歷史紀錄。</div>
           </div>
         </div>
       </div>
@@ -270,15 +248,20 @@ tr:last-child td{border-bottom:none}
 <!-- TIMER -->
 <section id="timerView" class="app timerApp hide">
   <div class="topbar">
-    <div class="title"><h1>計時器</h1><p>學習計時器｜雲端同步｜輸出 Excel</p></div>
+    <div class="title"><h1>計時器</h1><p>專注計時｜休息提醒｜每日累計</p></div>
     <button class="navBtn ghost" onclick="goHome()">← 回首頁</button>
   </div>
   <div class="cloud-status"><span id="timerCloudDot" class="dot"></span><span id="timerCloudText">雲端連線中...</span></div>
   <section class="card"><div class="section timerSettings">
-    <div><label>本次目標</label><input id="timerTarget" type="number" min="1" value="30"></div>
-    <div><label>每次目標</label><input id="timerStudy" type="number" min="1" value="10"></div>
-    <div><label>每次休息</label><input id="timerBreak" type="number" min="1" value="5"></div>
+    <div><label>本次總目標（分鐘）</label><input id="timerTarget" type="number" min="1" value="30"></div>
+    <div><label>每輪專注（分鐘）</label><input id="timerStudy" type="number" min="1" value="10"></div>
+    <div><label>每輪休息（分鐘）</label><input id="timerBreak" type="number" min="1" value="5"></div>
   </div></section>
+  <section class="timerPresetRow">
+    <button class="ghost" onclick="timerApplyPreset(25,25,5)">25 / 5</button>
+    <button class="ghost" onclick="timerApplyPreset(50,50,10)">50 / 10</button>
+    <button class="ghost" onclick="timerApplyPreset(90,45,10)">90 / 10</button>
+  </section>
   <section class="todayBox">
     <div class="statCard"><div class="k">今日日期</div><div id="timerTodayDate" class="v">----</div></div>
     <div class="statCard"><div class="k">今日累計時間</div><div id="timerTodayTotal" class="v">00:00:00</div></div>
@@ -299,7 +282,7 @@ tr:last-child td{border-bottom:none}
   </div>
   <section class="timerBtns">
     <button id="timerStartBtn" onclick="timerStartOrResume()">開始</button>
-    <button id="timerPauseBtn" onclick="timerPause()" disabled>停止</button>
+    <button id="timerPauseBtn" onclick="timerPause()" disabled>暫停</button>
   </section>
   <section class="timerCheckpointRow">
     <button id="timerCheckpointBtn" class="warn" onclick="timerCheckpoint()" disabled>補登上一段並重新開始</button>
@@ -330,6 +313,11 @@ tr:last-child td{border-bottom:none}
     <button class="navBtn ghost" onclick="goHome()">← 回首頁</button>
   </div>
   <div class="cloud-status"><span id="fitnessCloudDot" class="dot"></span><span id="fitnessCloudText">雲端連線中...</span></div>
+  <div class="fitnessGuide">
+    <div class="guideStep"><b>1 選部位</b><span class="small">先選今天練的地方</span></div>
+    <div class="guideStep"><b>2 選動作</b><span class="small">照順序或直接點動作</span></div>
+    <div class="guideStep"><b>3 計時存檔</b><span class="small">每組完成後自動進休息</span></div>
+  </div>
   <div id="fitnessExerciseSaveBar" class="exerciseSaveBar hide">
     <button class="finishOrangeBtn" onclick="saveSession()">訓練結束並儲存</button>
   </div>
@@ -383,10 +371,13 @@ tr:last-child td{border-bottom:none}
             <button class="primary" id="startMoveBtn" onclick="startMove()">開始本組動作</button>
             <button class="good" id="finishMoveBtn" onclick="finishMove()">本組做完 → 開始休息</button>
             <button class="warn" id="finishRestBtn" onclick="finishRest()">休息完成 → 下一組</button>
+            <button class="secondaryBtn" id="skipRestBtn" onclick="skipRest()">略過休息</button>
           </div>
           <div class="row" id="fitSecondaryActions" style="margin-top:12px">
-            <div class="restCircleRow" id="restAdjustRow">
+            <div class="restCircleRow quickRestGrid" id="restAdjustRow">
               <button class="ghost restRoundBtn" onclick="setRestTarget(60)">60s</button>
+              <button class="ghost restRoundBtn" onclick="setRestTarget(90)">90s</button>
+              <button class="ghost restRoundBtn" onclick="setRestTarget(120)">120s</button>
               <button class="ghost restRoundBtn" onclick="adjustRestTarget(30)">+30s</button>
               <button class="ghost restRoundBtn" onclick="adjustRestTarget(-30)">-30s</button>
             </div>
@@ -406,127 +397,30 @@ tr:last-child td{border-bottom:none}
   <div class="makerFooter">2026/05/06 Yu製作</div>
 </section>
 
-<!-- VOCAB -->
-<section id="vocabView" class="app vnWrap hide">
-  <div class="vnTop">
-    <div class="title"><h1>越南文單字複習</h1><p>新單字優先複習｜錯題循環｜每日複習紀錄</p></div>
-    <button class="navBtn ghost" onclick="goHome()">← 回首頁</button>
-  </div>
-  <div class="cloud-status"><span id="vocabCloudDot" class="dot"></span><span id="vocabCloudText">雲端連線中...</span></div>
-  <div id="vocabSetup">
-    <section class="card">
-      <div class="section row" style="justify-content:space-between">
-        <div><h2>開始複習</h2><div class="small">新單字會先拿出來考；新單字都答對後，才會混入舊字複習。</div></div>
-        <button class="primary vocabStartBtn" onclick="vnStartReview()">開始複習</button>
-      </div>
-    </section>
-    <section class="card">
-      <div class="section">
-        <div class="sectionHead">
-          <h2>新增單字</h2>
-          <button class="foldBtn" onclick="toggleSection('vnAddSection', this)">收起</button>
-        </div>
-        <div id="vnAddSection" class="sectionBody">
-          <div class="vnRow">
-            <div><label>越南文</label><input id="vnViInput" placeholder="例如：Không biết"></div>
-            <div><label>中文意思</label><input id="vnZhInput" placeholder="例如：不知道"></div>
-            <div><label>備註</label><input id="vnNoteInput" placeholder="例如：không = 不"></div>
-          </div>
-          <button onclick="vnAddOne()">新增單字</button>
-          <button class="ghost" onclick="vnFillDemo()">加入示範</button>
-          <hr>
-          <label>批量貼上，一行一組：越南文 中文意思</label>
-          <textarea id="vnBulkInput" placeholder="Không biết 不知道&#10;Tôi không hiểu 我不懂&#10;Cái này bao nhiêu tiền 這個多少錢"></textarea>
-          <button onclick="vnAddBulk()">批量新增</button>
-          <button class="ghost" onclick="vnExportWords()">匯出備份</button>
-          <button class="danger" onclick="vnClearWords()">清空單字</button>
-          <div class="small">可用「/」設定多個正確答案。答案判斷會忽略大小寫、空格、標點符號；備註會在答題後才顯示。</div>
-        </div>
-        <hr>
-        <div class="sectionHead">
-          <h2>已新增單字 <span class="pill">單字數：<b id="vnTotalCount">0</b></span></h2>
-          <button class="foldBtn" onclick="toggleSection('vnWordListSection', this)">收起</button>
-        </div>
-        <div id="vnWordListSection" class="sectionBody">
-          <div id="vnWordList" class="wordListBox"></div>
-        </div>
-        <hr>
-        <div class="sectionHead">
-          <h2>每日複習紀錄</h2>
-          <button class="foldBtn" onclick="toggleSection('vnDailyRecordSection', this)">收起</button>
-        </div>
-        <div id="vnDailyRecordSection" class="sectionBody">
-          <div class="vocabRecordActions">
-            <div id="vnTodayHint" class="small"></div>
-            <div class="row">
-              <button class="ghost" onclick="vnExportDailyDetail()">匯出詳細</button>
-              <button class="danger" onclick="vnClearDaily()">清空紀錄</button>
-            </div>
-          </div>
-          <div id="vnDailyRecord" class="recordBox"></div>
-        </div>
-      </div>
-    </section>
-  </div>
-  <div id="vocabReview" class="vnReview hide">
-    <section class="reviewCard">
-      <div class="reviewTop">
-        <button class="ghost" onclick="vnBackSetup()">返回新增單字</button>
-        <select id="vnModeSelect" onchange="vnResetSessionAndNext()">
-          <option value="viToZh">越南文 → 中文</option>
-          <option value="zhToVi">中文 → 越南文</option>
-        </select>
-      </div>
-      <div class="vnVoiceSettings">
-        <label class="vnMiniCheck"><input id="vnAutoSpeakCheck" type="checkbox" onchange="vnUpdateVoiceSettings()"> 直接發音</label>
-        <label class="vnMiniCheck"><input id="vnRateEnabledCheck" type="checkbox" onchange="vnUpdateVoiceSettings()"> 套用語速</label>
-        <div class="vnStepper">
-          <span class="vnStepperLabel">語速</span>
-          <button class="vnStepperBtn" type="button" onclick="vnCycleRate(-1)">▼</button>
-          <span id="vnRateDisplay" class="vnStepperValue">1.0 正常</span>
-          <button class="vnStepperBtn" type="button" onclick="vnCycleRate(1)">▲</button>
-        </div>
-        <div class="vnStepper">
-          <span class="vnStepperLabel">發音</span>
-          <button class="vnStepperBtn" type="button" onclick="vnCycleVoiceSource(-1)">▼</button>
-          <span id="vnVoiceSourceDisplay" class="vnStepperValue">Google TTS</span>
-          <button class="vnStepperBtn" type="button" onclick="vnCycleVoiceSource(1)">▲</button>
-        </div>
-      </div>
-      <div class="small" id="vnQuizHint">請輸入中文意思</div>
-      <div class="small" id="vnRoundHint">第 1 輪｜剩餘 0 題</div>
-      <div id="vnCompletion" class="completionBanner hide"></div>
-      <div class="question" id="vnQuestion">—</div>
-      <div class="questionNote" id="vnQuestionNote"></div>
-      <input id="vnAnswerInput" class="answer" placeholder="輸入答案後按 Enter" onkeydown="if(event.key==='Enter' && !event.isComposing)vnCheckAnswer()">
-      <div class="row" style="justify-content:center;margin-top:8px">
-        <button onclick="vnCheckAnswer()">確認答案</button>
-        <button class="ghost" onclick="vnNextQuestion()">下一題</button>
-        <button class="ghost" onclick="vnSpeakQuestion()">🔊 發音</button>
-        <button class="ghost" onclick="vnExportTTSLog()">匯出TTS Log</button>
-      </div>
-      <div id="vnVoiceStatus" class="small"></div>
-      <div id="vnResult" class="result"></div>
-      <div id="vnAnswerHint" class="answerHint"></div>
-    </section>
-  </div>
-  <div class="makerFooter">2026/05/06 Yu製作</div>
-</section>
-
 <script>
 /* ===== Shared ===== */
 const SUITE_PIN="0825";
 function $(id){return document.getElementById(id)}
 function toast(msg){const el=$("toast"); el.textContent=msg; el.classList.add("show"); setTimeout(()=>el.classList.remove("show"),1600)}
 function toggleSection(sectionId,btn){const section=$(sectionId);if(!section)return;section.classList.toggle("collapsed");if(btn)btn.textContent=section.classList.contains("collapsed")?"展開":"收起"}
+function applyTheme(theme){
+  const next=theme==="light"?"light":"dark";
+  document.documentElement.dataset.theme=next;
+  localStorage.setItem("yu_suite_theme",next);
+  const btn=$("themeToggle");
+  if(btn)btn.textContent=next==="light"?"夜間":"日間";
+}
+function toggleTheme(){applyTheme(document.documentElement.dataset.theme==="light"?"dark":"light")}
+function initTheme(){applyTheme(localStorage.getItem("yu_suite_theme")==="light"?"light":"dark")}
 function isUnlocked(){return sessionStorage.getItem("yu_suite_unlocked")==="1"}
-function unlockSuite(){const v=$("globalPinInput").value; if(v===SUITE_PIN){sessionStorage.setItem("yu_suite_unlocked","1");$("globalPinInput").value="";renderHome()}else{$("globalPinMsg").textContent="PIN 錯誤，請再試一次。";$("globalPinInput").select()}}
+function unlockSuite(){const input=$("globalPinInput"),msg=$("globalPinMsg"),v=input.value.trim();if(v===SUITE_PIN){sessionStorage.setItem("yu_suite_unlocked","1");input.value="";if(msg)msg.textContent="";renderHome()}else{if(msg)msg.textContent="PIN 錯誤，請再試一次。";input.select()}}
 function autoUnlockSuite(){const input=$("globalPinInput"),msg=$("globalPinMsg");if(!input)return;const v=input.value;if(msg)msg.textContent="";if(v===SUITE_PIN){sessionStorage.setItem("yu_suite_unlocked","1");input.value="";renderHome();return}if(v.length>=SUITE_PIN.length&&msg){msg.textContent="PIN 錯誤，請再試一次。";input.select()}}
-function lockSuite(){sessionStorage.removeItem("yu_suite_unlocked");renderHome()}
-function renderHome(){const ok=isUnlocked();$("lockBox").classList.toggle("hide",ok);$("toolMenu").classList.toggle("hide",!ok)}
+function togglePinVisible(){const input=$("globalPinInput"),btn=$("pinVisibleBtn");if(!input)return;const show=input.type==="password";input.type=show?"text":"password";if(btn)btn.textContent=show?"隱藏":"顯示";input.focus()}
+function lockSuite(){sessionStorage.removeItem("yu_suite_unlocked");renderHome();setTimeout(()=>{$("globalPinInput")?.focus()},50)}
+function renderHome(){const ok=isUnlocked();$("lockBox").classList.toggle("hide",ok);$("toolMenu").classList.toggle("hide",!ok);if(!ok)setTimeout(()=>{$("globalPinInput")?.focus()},50)}
 function guard(){if(!isUnlocked()){goHome();return false}return true}
-function showOnly(id){["homeView","timerView","fitnessView","vocabView"].forEach(x=>$(x).classList.add("hide"));$(id).classList.remove("hide");window.scrollTo(0,0)}
-function openTool(name){if(!guard())return;if(name==="timer"){showOnly("timerView");timerRender()}if(name==="fitness"){showOnly("fitnessView");fitInitOnce();renderFitnessAll()}if(name==="vocab"){showOnly("vocabView");vnRender()}}
+function showOnly(id){["homeView","timerView","fitnessView"].forEach(x=>$(x).classList.add("hide"));$(id).classList.remove("hide");window.scrollTo(0,0)}
+function openTool(name){if(!guard())return;if(name==="timer"){showOnly("timerView");timerRender()}if(name==="fitness"){showOnly("fitnessView");fitInitOnce();renderFitnessAll()}}
 function goHome(){showOnly("homeView");renderHome()}
 function pad(n){return String(n).padStart(2,"0")}
 function fmt(sec){sec=Math.max(0,Math.floor(sec||0));let m=Math.floor(sec/60),s=sec%60;return `${pad(m)}:${pad(s)}`}
@@ -544,7 +438,6 @@ const db=firebase.database();
 const ROOM_ID="main";
 const roomRef=db.ref("studyTimerRooms/"+ROOM_ID);
 const fitnessRef=roomRef.child("fitness");
-const vocabRef=roomRef.child("vocab");
 function setCloudStatus(prefix,ok,text){
   const dot=$(prefix+"CloudDot"), label=$(prefix+"CloudText");
   if(dot)dot.className=ok?"dot online":"dot offline";
@@ -553,7 +446,6 @@ function setCloudStatus(prefix,ok,text){
 function setAllCloudStatus(ok,text){
   setCloudStatus("timer",ok,text);
   setCloudStatus("fitness",ok,text);
-  setCloudStatus("vocab",ok,text);
 }
 let timerData=null,timerOffset=0,timerAudio=null,timerWrite=null,timerFinishPending=false;
 const CIRC=2*Math.PI*100;
@@ -576,6 +468,15 @@ function timerLockInputs(lock){["timerTarget","timerStudy","timerBreak"].forEach
 function timerRenderRecords(){let r=timerData?.records||{},keys=Object.keys(r).sort().reverse();$("timerRecordBody").innerHTML=keys.length?keys.map(k=>`<tr><td>${k}</td><td>${fmtRead(r[k]||0)}</td></tr>`).join(""):'<tr><td colspan="2">尚無紀錄</td></tr>'}
 function timerRecordUpdates(d,c,t=timerNow()){let updates=timerBuildRecordUpdates(d,t);if(!Object.keys(updates).length){let st=timerState(d),day=st.dayBaseDate||timerToday(),base=st.dayBaseSeconds||0;updates[`records/${day}`]=base+(c?.completedStudy||0)}return updates}
 function timerInputNum(id,fb){let v=parseInt($(id).value,10);return Number.isFinite(v)&&v>0?v:fb}
+function timerApplyPreset(target,study,rest){
+  const st=timerState(timerData);
+  if(st&&["running","paused"].includes(st.status)){toast("計時中先暫停或清除本次，再改設定");return}
+  $("timerTarget").value=target;
+  $("timerStudy").value=study;
+  $("timerBreak").value=rest;
+  timerWriteSettings();
+  toast(`已套用 ${target} 分鐘設定`);
+}
 function timerWriteSettings(){clearTimeout(timerWrite);timerWrite=setTimeout(async()=>{if(!timerData)return;let st=timerState(timerData);if(st.status==="running"||st.status==="paused")return;let set={targetStudyMinutes:timerInputNum("timerTarget",30),studyMinutes:timerInputNum("timerStudy",10),breakMinutes:timerInputNum("timerBreak",5)},target=set.targetStudyMinutes*60,study=set.studyMinutes*60;await roomRef.update({settings:set,"state/currentPhase":"study","state/baseElapsedSeconds":0,"state/baseCompletedStudySeconds":0,"state/remainingPhaseSeconds":Math.min(study,target),"state/updatedAt":firebase.database.ServerValue.TIMESTAMP})},350)}
 ["timerTarget","timerStudy","timerBreak"].forEach(id=>$(id).addEventListener("input",timerWriteSettings));
 async function timerStartOrResume(){let snap=await roomRef.once("value"),d=snap.val()||timerDefault(),st=timerState(d),s=timerSettings(d),status=st.status||"idle",now=timerNow(),u={};if(status==="running")return;if(status==="idle"||status==="finished"){let set={targetStudyMinutes:timerInputNum("timerTarget",s.targetStudyMinutes),studyMinutes:timerInputNum("timerStudy",s.studyMinutes),breakMinutes:timerInputNum("timerBreak",s.breakMinutes)},target=set.targetStudyMinutes*60,study=set.studyMinutes*60,today=timerToday(),base=(d.records||{})[today]||0,baselines={...(d.records||{})};u={settings:set,"state/status":"running","state/currentPhase":"study","state/sessionStartedAt":now,"state/startedAt":now,"state/baseElapsedSeconds":0,"state/baseCompletedStudySeconds":0,"state/remainingPhaseSeconds":Math.min(study,target),"state/dayBaseDate":today,"state/dayBaseSeconds":base,"state/recordBaselines":baselines,"state/updatedAt":firebase.database.ServerValue.TIMESTAMP}}else{let c=timerCompute(d,now),sessionStart=st.sessionStartedAt||now-Math.max(0,c.effectiveElapsed||0)*1000,baselines=timerRecordBaselines(d);u={"state/status":"running","state/currentPhase":c.currentPhase,"state/sessionStartedAt":sessionStart,"state/startedAt":now,"state/baseElapsedSeconds":c.effectiveElapsed,"state/baseCompletedStudySeconds":c.completedStudy,"state/remainingPhaseSeconds":c.remainingPhase,"state/recordBaselines":baselines,"state/updatedAt":firebase.database.ServerValue.TIMESTAMP}}await roomRef.update(u)}
@@ -737,7 +638,7 @@ function fitRenderWorkoutMode(){
   let moving=status==="moving";
   let resting=status==="resting";
   let idle=!moving&&!resting;
-  const timerBox=$("fitTimerBox"),moveCard=$("moveTimerCard"),restCard=$("restTimerCard"),inputRow=$("fitInputRow"),restAdjust=$("restAdjustRow"),actionRow=$("fitActionRow"),secondary=$("fitSecondaryActions"),startBtn=$("startMoveBtn"),finishMoveBtn=$("finishMoveBtn"),finishRestBtn=$("finishRestBtn"),completeBtn=$("completeExerciseBtn"),resetBtn=$("resetSessionBtn");
+  const timerBox=$("fitTimerBox"),moveCard=$("moveTimerCard"),restCard=$("restTimerCard"),inputRow=$("fitInputRow"),restAdjust=$("restAdjustRow"),actionRow=$("fitActionRow"),secondary=$("fitSecondaryActions"),startBtn=$("startMoveBtn"),finishMoveBtn=$("finishMoveBtn"),finishRestBtn=$("finishRestBtn"),skipRestBtn=$("skipRestBtn"),completeBtn=$("completeExerciseBtn"),resetBtn=$("resetSessionBtn");
   if(timerBox){
     timerBox.classList.toggle("hide",idle);
     timerBox.classList.toggle("single",moving||resting);
@@ -745,11 +646,12 @@ function fitRenderWorkoutMode(){
   if(moveCard)moveCard.classList.toggle("hide",resting);
   if(restCard)restCard.classList.toggle("hide",moving);
   if(inputRow)inputRow.classList.toggle("hide",!idle);
-  if(restAdjust)restAdjust.classList.toggle("hide",!idle);
+  if(restAdjust)restAdjust.classList.toggle("hide",moving);
   if(actionRow)actionRow.classList.add("single");
   if(startBtn)startBtn.classList.toggle("hide",!idle);
   if(finishMoveBtn)finishMoveBtn.classList.toggle("hide",!moving);
   if(finishRestBtn)finishRestBtn.classList.toggle("hide",!resting);
+  if(skipRestBtn)skipRestBtn.classList.toggle("hide",!resting);
   if(secondary)secondary.classList.toggle("hide",moving);
   if(completeBtn)completeBtn.classList.toggle("hide",moving);
   if(resetBtn)resetBtn.classList.toggle("hide",!idle);
@@ -877,403 +779,12 @@ function fitnessExportCSV(){let rows=[["紀錄ID","日期","訓練部位","訓�
 
 function initFitnessCloud(){fitnessRef.on("value",snap=>{let data=snap.val();if(data&&(data.workouts||data.history||data.current)){fitnessCloudData=data;fitnessCloudReady=true;fitApplyData(data);if(fitInited)renderFitnessAll()}else{let seed=fitLocalSeed();fitnessCloudData={workouts:seed.workouts,history:seed.history,current:fitSanitizeState(seed.current),version:"suite-v1.8-fitness"};fitnessCloudReady=true;fitnessRef.set({...fitnessCloudData,updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>{console.error(e);setCloudStatus("fitness",false,"健身雲端初始化失敗，請檢查 Firebase 規則")});fitApplyData(fitnessCloudData);if(fitInited)renderFitnessAll()}},err=>{console.error(err);setCloudStatus("fitness",false,"健身 Firebase 讀取失敗")})}
 
-/* ===== VOCAB ===== */
-const VN_WORDS="yu_vn_words_v1",VN_DAILY="yu_vn_daily_v1",VN_TTS_LOG="yu_vn_tts_log_v1";
-const VN_RATE_OPTIONS=[0.75,1,1.25,1.5];
-const VN_VOICE_SOURCE_OPTIONS=["google","browser"];
-const VN_DEFAULT_SETTINGS={autoSpeak:false,rate:1,rateEnabled:false,voiceSource:"google"};
-let vnWords=[],vnDailyData={},vnSettings={...VN_DEFAULT_SETTINGS},vocabCloudData=null,vocabCloudReady=false,vnAudio=null,vnCurrent=null,vnCurrentIndex=null,vnQueue=[],vnWrongSet=new Set(),vnLastIndex=null,vnRound=1,vnPhase="full",vnAnswered=false;
-function vnReadLocal(key,fallback){try{let raw=localStorage.getItem(key);return raw?JSON.parse(raw):fallback}catch(e){return fallback}}
-function vnLocalSeed(){return {words:vnReadLocal(VN_WORDS,[]),daily:vnReadLocal(VN_DAILY,{})}}
-function vnClampRate(v){
-  let rate=parseFloat(v);
-  if(!Number.isFinite(rate))rate=VN_DEFAULT_SETTINGS.rate;
-  let best=VN_RATE_OPTIONS[0];
-  let bestDiff=Infinity;
-  VN_RATE_OPTIONS.forEach(x=>{const diff=Math.abs(x-rate);if(diff<bestDiff){best=x;bestDiff=diff;}});
-  return best;
-}
-function vnRateLabel(rate){
-  rate=vnClampRate(rate);
-  if(rate===0.75)return "0.75 較慢";
-  if(rate===1)return "1.0 正常";
-  if(rate===1.25)return "1.25 較快";
-  return "1.5 很快";
-}
-function vnVoiceSourceLabel(source){
-  if(source==="browser")return "備用語音";
-  return "Google TTS";
-}
-function vnSanitizeSettings(raw){
-  raw=raw||{};
-  let voiceSource=VN_VOICE_SOURCE_OPTIONS.includes(raw.voiceSource)?raw.voiceSource:VN_DEFAULT_SETTINGS.voiceSource;
-  return {
-    autoSpeak:raw.autoSpeak===true,
-    rate:vnClampRate(raw.rate),
-    rateEnabled:raw.rateEnabled===true,
-    voiceSource
-  };
-}
-function vnEffectiveRate(){
-  return vnSettings.rateEnabled ? vnClampRate(vnSettings.rate) : 1;
-}
-function vnApplyData(data){data=data||{};let seed=vnLocalSeed();vnWords=Array.isArray(data.words)?data.words:(Array.isArray(seed.words)?seed.words:[]);vnDailyData=(data.daily&&typeof data.daily==="object")?data.daily:(seed.daily||{});vnSettings=vnSanitizeSettings(data.settings||vnSettings||VN_DEFAULT_SETTINGS);localStorage.setItem(VN_WORDS,JSON.stringify(vnWords));localStorage.setItem(VN_DAILY,JSON.stringify(vnDailyData));vnApplyVoiceSettingsToUI()}
-function vnCloudSave(patch){vocabCloudData={...(vocabCloudData||{}),...patch};try{localStorage.setItem(VN_WORDS,JSON.stringify(vnWords));localStorage.setItem(VN_DAILY,JSON.stringify(vnDailyData))}catch(e){}if(vocabRef){vocabRef.update({...patch,version:"suite-v3.3-vocab",updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>{console.error(e);setCloudStatus("vocab",false,"越南文雲端寫入失敗，請檢查 Firebase 規則")})}}
-function vnVoiceKey(v,i){return v.voiceURI||v.name||("voice"+i)}
-function vnApplyVoiceSettingsToUI(){
-  const auto=$("vnAutoSpeakCheck"),rateEnabled=$("vnRateEnabledCheck"),rateDisplay=$("vnRateDisplay"),sourceDisplay=$("vnVoiceSourceDisplay");
-  if(auto)auto.checked=!!vnSettings.autoSpeak;
-  if(rateEnabled)rateEnabled.checked=!!vnSettings.rateEnabled;
-  if(rateDisplay)rateDisplay.textContent=vnRateLabel(vnSettings.rate);
-  if(sourceDisplay)sourceDisplay.textContent=vnVoiceSourceLabel(vnSettings.voiceSource);
-}
-function vnUpdateVoiceSettings(){
-  const auto=$("vnAutoSpeakCheck"),rateEnabled=$("vnRateEnabledCheck");
-  vnSettings=vnSanitizeSettings({
-    autoSpeak:auto?auto.checked:false,
-    rate:vnSettings.rate,
-    rateEnabled:rateEnabled?rateEnabled.checked:false,
-    voiceSource:vnSettings.voiceSource
-  });
-  vnApplyVoiceSettingsToUI();
-  vnCloudSave({settings:vnSettings});
-}
-function vnCycleRate(dir){
-  let current=vnClampRate(vnSettings.rate);
-  let idx=VN_RATE_OPTIONS.findIndex(x=>x===current);
-  if(idx<0)idx=1;
-  idx=(idx+dir+VN_RATE_OPTIONS.length)%VN_RATE_OPTIONS.length;
-  vnSettings=vnSanitizeSettings({...vnSettings,rate:VN_RATE_OPTIONS[idx]});
-  vnApplyVoiceSettingsToUI();
-  vnCloudSave({settings:vnSettings});
-}
-function vnCycleVoiceSource(dir){
-  let idx=VN_VOICE_SOURCE_OPTIONS.indexOf(vnSettings.voiceSource);
-  if(idx<0)idx=0;
-  idx=(idx+dir+VN_VOICE_SOURCE_OPTIONS.length)%VN_VOICE_SOURCE_OPTIONS.length;
-  vnSettings=vnSanitizeSettings({...vnSettings,voiceSource:VN_VOICE_SOURCE_OPTIONS[idx]});
-  vnApplyVoiceSettingsToUI();
-  vnCloudSave({settings:vnSettings});
-}
-function vnLoad(){if(vocabCloudData){vnApplyData(vocabCloudData)}else{vnApplyData(vnLocalSeed())}}
-function vnSave(){vnCloudSave({words:vnWords});vnRender()}
-function vnDaily(){return {...(vnDailyData||{})}}
-function vnSaveDaily(d){vnDailyData=d||{};vnCloudSave({daily:vnDailyData})}
-function vnRecordStart(){let d=vnDaily(),k=todayText();d[k]=d[k]||{start:0,round:0,perfect:0};d[k].start++;vnSaveDaily(d);vnRenderDaily()}
-function vnRecordRound(perfect){let d=vnDaily(),k=todayText();d[k]=d[k]||{start:0,round:0,perfect:0};d[k].round++;if(perfect)d[k].perfect++;vnSaveDaily(d);vnRenderDaily()}
-function vnCleanAnswerText(s){
-  let text=(s||"").toString();
-  // 如果資料不小心把「備註」合在中文答案裡，只取前面的答案本體。
-  text=text.split(/[｜|]\s*備註\s*[:：]/)[0];
-  text=text.split(/備註\s*[:：]/)[0];
-  return text;
-}
-function vnNormalize(s){
-  let text=vnCleanAnswerText(s);
-  try{text=text.normalize("NFKC")}catch(e){}
-  text=text.trim().toLowerCase();
-  // 移除手機輸入法/複製貼上可能帶入的不可見字元。
-  text=text.replace(/[\u200B-\u200D\uFEFF\u2060]/g,"");
-  try{text=text.replace(/[\p{P}\p{S}]/gu,"")}catch(e){text=text.replace(/[.,!?;:'"()[\]{}<>，。！？、；：「」『』（）【】《》…~～\-—_＋+＝=＊*\/\\|@#$%^&`]/g,"")}
-  text=text.replace(/\s+/g,"");
-  // 常見繁簡/異體字統一，避免手機輸入法造成明明一樣卻判錯。
-  const map={"么":"麼","麽":"麼","甚":"什","吗":"嗎","吗":"嗎","这":"這","个":"個","吗":"嗎","妳":"你","您":"你","裡":"里","裏":"里"};
-  text=text.replace(/[么麽甚吗这个妳您裡裏]/g,ch=>map[ch]||ch);
-  return text;
-}
-function vnRelaxChinese(s){
-  // 量詞常會因翻譯不同而不同：這支/這隻/這枝/這個，答題時視為同類。
-  return (s||"").replace(/[支隻枝只個]/g,"個");
-}
-function vnAnswerCandidates(raw){
-  let main=vnCleanAnswerText(raw);
-  return main.split(/[\/／]/).map(vnNormalize).filter(Boolean);
-}
-function vnIsAnswerCorrect(userAnswer, correctRaw){
-  const ans=vnNormalize(userAnswer);
-  if(!ans)return false;
-  const candidates=vnAnswerCandidates(correctRaw);
-  if(candidates.includes(ans))return true;
-  const relaxed=vnRelaxChinese(ans);
-  return candidates.some(c=>vnRelaxChinese(c)===relaxed);
-}
-function vnEsc(str){return String(str??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("\'","&#039;")}
-function vnAddOne(){let vi=$("vnViInput").value.trim(),zh=$("vnZhInput").value.trim(),note=$("vnNoteInput").value.trim();if(!vi||!zh){alert("請輸入越南文和中文意思");return}vnWords.push({vi,zh,note,isNew:true,createdAt:Date.now()});$("vnViInput").value="";$("vnZhInput").value="";$("vnNoteInput").value="";vnResetSession();vnSave()}
-function vnAddBulk(){let text=$("vnBulkInput").value.trim();if(!text){alert("請先貼上單字");return}let added=0;text.split(/\n+/).map(x=>x.trim()).filter(Boolean).forEach(line=>{let m=line.match(/[\u4e00-\u9fff]/);if(m&&m.index>0){let vi=line.slice(0,m.index).trim(),zh=line.slice(m.index).trim();if(vi&&zh){vnWords.push({vi,zh,note:"",isNew:true,createdAt:Date.now()});added++}}});$("vnBulkInput").value="";vnResetSession();vnSave();alert("已新增 "+added+" 組單字")}
-function vnFillDemo(){[{vi:"Không biết",zh:"不知道",note:"không=不；biết=知道"},{vi:"không hiểu",zh:"不懂",note:"hiểu=懂"},{vi:"Cái này bao nhiêu tiền",zh:"這個多少錢",note:"bao nhiêu tiền=多少錢"}].forEach(w=>vnWords.push({...w,isNew:true,createdAt:Date.now()}));vnResetSession();vnSave()}
-function vnDeleteWord(i){if(!confirm("確定刪除這組單字嗎？"))return;vnWords.splice(i,1);vnResetSession();vnSave()}
-function vnUpdateNote(i,v){if(vnWords[i]){vnWords[i].note=v;vnCloudSave({words:vnWords})}}
-function vnClearWords(){if(!confirm("確定清空全部單字嗎？"))return;vnWords=[];vnResetSession();vnSave()}
-function vnExportWords(){csvDownload(`越南文單字_${todayText().replaceAll("-","")}.csv`,[["越南文","中文","備註","是否新單字"],...vnWords.map(w=>[w.vi,w.zh,w.note||"",w.isNew?"新":"舊"])])}
-function vnRender(){vnLoad();$("vnTotalCount").textContent=vnWords.length;let box=$("vnWordList");box.innerHTML=vnWords.length?`<table><thead><tr><th style="width:44px">#</th><th>狀態</th><th>越南文</th><th>備註</th><th>中文</th><th style="width:74px">操作</th></tr></thead><tbody>${vnWords.map((w,i)=>{let isNew=w.isNew===true;return `<tr><td>${i+1}</td><td><span class="wordStatus ${isNew?"new":"old"}">${isNew?"新單字":"舊單字"}</span></td><td>${vnEsc(w.vi)}</td><td><input class="noteInput" value="${vnEsc(w.note||"")}" placeholder="手動填入備註" oninput="vnUpdateNote(${i},this.value)"></td><td>${vnEsc(w.zh)}</td><td><button class="danger deleteSmall" onclick="vnDeleteWord(${i})">刪除</button></td></tr>`}).join("")}</tbody></table>`:'<div class="empty">尚未新增單字</div>';vnRenderDaily();vnApplyVoiceSettingsToUI()}
-function vnDeleteDaily(encodedKey){let key=decodeURIComponent(encodedKey||"");if(!key)return;let d=vnDaily();if(!d[key])return;if(!confirm("確定刪除「"+key+"」的複習紀錄嗎？"))return;delete d[key];vnSaveDaily(d);vnRenderDaily();toast("已刪除複習紀錄")}
-function vnClearDaily(){if(!confirm("確定清空全部每日複習紀錄嗎？單字不會刪除。"))return;vnSaveDaily({});vnRenderDaily();toast("每日複習紀錄已清空")}
-function vnExportDailyDetail(){let d=vnDaily(),keys=Object.keys(d).sort();let dailyRows=keys.map(k=>({"日期":k,"複習次數":d[k]?.start||0,"完成輪數":d[k]?.round||0,"全對次數":d[k]?.perfect||0}));if(!dailyRows.length)dailyRows=[{"日期":"","複習次數":"","完成輪數":"","全對次數":""}];let wordRows=vnWords.map((w,i)=>({"#":i+1,"狀態":w.isNew?"新單字":"舊單字","越南文":w.vi||"","中文":w.zh||"","備註":w.note||"","建立時間":w.createdAt?new Date(w.createdAt).toLocaleString():""}));if(!wordRows.length)wordRows=[{"#":"","狀態":"","越南文":"","中文":"","備註":"","建立時間":""}];xlsxOrCsv(`越南文複習詳細_${todayText().replaceAll("-","")}.xlsx`,[{name:"每日複習紀錄",rows:dailyRows},{name:"單字清單",rows:wordRows}])}
-function vnRenderDaily(){let d=vnDaily(),keys=Object.keys(d).sort().reverse();$("vnDailyRecord").innerHTML=keys.length?`<table><thead><tr><th>日期</th><th>複習次數</th><th>完成輪數</th><th>全對次數</th><th style="width:74px">操作</th></tr></thead><tbody>${keys.map(k=>`<tr><td>${vnEsc(k)}</td><td>${d[k].start||0}</td><td>${d[k].round||0}</td><td>${d[k].perfect||0}</td><td><button class="danger deleteSmall" onclick="vnDeleteDaily('${encodeURIComponent(k)}')">刪除</button></td></tr>`).join("")}</tbody></table>`:'<div class="empty">尚無紀錄</div>';let t=d[todayText()]||{start:0,round:0,perfect:0};$("vnTodayHint").textContent=`今日：複習 ${t.start||0} 次｜完成 ${t.round||0} 輪｜全對 ${t.perfect||0} 次`}
-function vnShuffle(arr){let a=[...arr];for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
-function vnResetSession(){vnQueue=[];vnWrongSet=new Set();vnLastIndex=null;vnRound=1;vnPhase="full";vnCurrent=null;vnCurrentIndex=null;vnAnswered=false}
-function vnBuildQueue(){let newIdx=vnWords.map((w,i)=>w.isNew?i:null).filter(i=>i!==null);if(newIdx.length){vnPhase="new";vnQueue=vnShuffle(newIdx);return}vnPhase="full";vnQueue=vnShuffle(vnWords.map((_,i)=>i))}
-function vnNextIndex(){if(!vnWords.length)return null;if(!vnQueue.length){if(vnPhase==="new"){if(vnWrongSet.size){vnQueue=vnShuffle([...vnWrongSet]);vnWrongSet.clear()}else{vnWords.forEach(w=>w.isNew=false);vnCloudSave({words:vnWords});vnRecordRound(true);vnBuildQueue()}}else{vnRecordRound(vnWrongSet.size===0);vnQueue=vnWrongSet.size?vnShuffle([...vnWrongSet]):vnShuffle(vnWords.map((_,i)=>i));vnWrongSet.clear();vnRound++}}let idx=vnQueue.shift();vnLastIndex=idx;return idx}
-function vnStartReview(){if(!vnWords.length){alert("請先新增單字再開始複習");return}vnApplyVoiceSettingsToUI();vnResetSession();vnRecordStart();$("vocabSetup").classList.add("hide");$("vocabReview").classList.remove("hide");vnNextQuestion()}
-function vnBackSetup(){vnStopAudio();$("vocabReview").classList.add("hide");$("vocabSetup").classList.remove("hide");vnRender()}
-function vnResetSessionAndNext(){vnResetSession();vnNextQuestion()}
-function vnNextQuestion(){
-  vnStopAudio();
-  if(!vnQueue.length)vnBuildQueue();
-  let idx=vnNextIndex();
-  if(idx===null){$("vnQuestion").textContent="請先新增單字";return}
-  vnCurrentIndex=idx;
-  vnCurrent=vnWords[idx];
-  vnAnswered=false;
-  let mode=$("vnModeSelect").value;
-  if(mode==="viToZh"){
-    $("vnQuestion").textContent="🔊 請按發音";
-    $("vnQuestion").classList.add("questionHidden");
-    $("vnQuizHint").textContent="請先按 🔊 發音，再輸入中文意思";
-    $("vnVoiceStatus").textContent=vnSettings.autoSpeak?"正在準備發音...":"請按 🔊 發音";
-  }else{
-    $("vnQuestion").textContent=vnCurrent.zh;
-    $("vnQuestion").classList.remove("questionHidden");
-    $("vnQuizHint").textContent="請輸入越南文";
-    $("vnVoiceStatus").textContent=vnSettings.autoSpeak?"正在準備發音...":"需要時可按 🔊 發音";
-  }
-  $("vnRoundHint").textContent=`${vnPhase==="new"?"新單字優先":"第 "+vnRound+" 輪"}｜剩餘 ${vnQueue.length} 題`;
-  $("vnQuestionNote").textContent="";
-  $("vnAnswerInput").value="";
-  $("vnResult").textContent="";
-  $("vnAnswerHint").textContent="";
-  setTimeout(()=>$("vnAnswerInput").focus(),60);
-  if(vnSettings.autoSpeak){
-    setTimeout(()=>vnSpeakQuestion(true),120);
-  }
-}
-function vnCheckAnswer(){
-  if(!vnCurrent){vnNextQuestion();return}
-  let mode=$("vnModeSelect").value;
-  let userRaw=$("vnAnswerInput").value;
-  let correct=mode==="viToZh"?vnCurrent.zh:vnCurrent.vi;
-  let ok=vnIsAnswerCorrect(userRaw,correct);
-  vnAnswered=true;
-  if(ok){
-    $("vnResult").innerHTML='<span class="ok">✅</span>';
-    $("vnAnswerHint").textContent="答對了";
-    $("vnQuestionNote").textContent=vnCurrent.note?"備註："+vnCurrent.note:"";
-    setTimeout(vnNextQuestion,350);
-  }else{
-    if(mode==="viToZh"){$("vnQuestion").textContent=vnCurrent.vi;$("vnQuestion").classList.remove("questionHidden")}
-    $("vnResult").innerHTML='<span class="bad">✗</span>';
-    $("vnAnswerHint").textContent="正確答案："+vnCleanAnswerText(correct);
-    $("vnQuestionNote").textContent=vnCurrent.note?"備註："+vnCurrent.note:"";
-    vnWrongSet.add(vnCurrentIndex);
-  }
-}
-function vnStopAudio(){
-  try{
-    if(vnAudio){
-      vnAudio.pause();
-      vnAudio.currentTime=0;
-      vnAudio=null;
-    }
-  }catch(e){}
-  try{
-    if('speechSynthesis' in window){
-      window.speechSynthesis.cancel();
-    }
-  }catch(e){}
-}
-function vnGetVietnameseTextToSpeak(){
-  if(!vnCurrent)return "";
-  return vnCurrent.vi||"";
-}
-function vnVoiceKey(v,i){return v.voiceURI||v.name||("voice"+i)}
-function vnPickVietnameseVoice(){
-  if(!('speechSynthesis' in window))return null;
-  const allVoices=window.speechSynthesis.getVoices()||[];
-  const viVoices=allVoices.filter(v=>(v.lang||"").toLowerCase().includes("vi"));
-  return viVoices[0] || null;
-}
-function vnGetTTSLog(){
-  try{return JSON.parse(localStorage.getItem(VN_TTS_LOG)||"[]")}catch(e){return []}
-}
-function vnAddTTSLog(item){
-  const logs=vnGetTTSLog();
-  const safeItem={
-    time:new Date().toISOString(),
-    word:vnGetVietnameseTextToSpeak(),
-    selectedSource:vnSettings.voiceSource,
-    rateEnabled:!!vnSettings.rateEnabled,
-    rate:vnEffectiveRate(),
-    page:location.href,
-    userAgent:navigator.userAgent,
-    ...item
-  };
-  logs.unshift(safeItem);
-  localStorage.setItem(VN_TTS_LOG,JSON.stringify(logs.slice(0,200)));
-}
-function vnExportTTSLog(){
-  const logs=vnGetTTSLog();
-  if(!logs.length){
-    alert("目前沒有 TTS 記錄可以匯出。");
-    return;
-  }
-  const rows=[["時間","結果","來源","原因","單字","URL","Audio錯誤碼","錯誤名稱","錯誤訊息","套用語速","語速","使用者操作","瀏覽器"]];
-  logs.forEach(l=>rows.push([
-    l.time||"",
-    l.result||"",
-    l.source||"",
-    l.reason||"",
-    l.word||"",
-    l.url||"",
-    l.audioErrorCode||"",
-    l.errorName||"",
-    l.errorMessage||"",
-    l.rateEnabled?"是":"否",
-    l.rate||"",
-    l.fromAuto?"自動":"手動",
-    l.userAgent||""
-  ]));
-  csvDownload(`越南文_TTS_Log_${todayText().replaceAll("-","")}.csv`,rows);
-}
-function vnPlayBrowserTTS(text, fromAuto, reason){
-  const status=$("vnVoiceStatus");
-  if(!('speechSynthesis' in window)){
-    if(status)status.textContent="備用語音失敗：此手機/瀏覽器不支援";
-    vnAddTTSLog({result:"fail",source:"備用語音",reason:"speechSynthesis not supported",fromAuto});
-    return;
-  }
-  try{
-    window.speechSynthesis.cancel();
-    let started=false,ended=false;
-    const utter=new SpeechSynthesisUtterance(text);
-    utter.lang="vi-VN";
-    utter.rate=vnEffectiveRate();
-    utter.pitch=1;
-    const voice=vnPickVietnameseVoice();
-    if(voice)utter.voice=voice;
-    utter.onstart=function(){
-      started=true;
-      if(status)status.textContent="目前發音來源：備用語音（手機/瀏覽器）";
-      vnAddTTSLog({result:"start",source:"備用語音",reason:reason||"",fromAuto});
-    };
-    utter.onend=function(){
-      ended=true;
-      if(status)status.textContent="播放完成｜來源：備用語音（手機/瀏覽器）";
-      vnAddTTSLog({result:"success",source:"備用語音",reason:"ended",fromAuto});
-    };
-    utter.onerror=function(e){
-      ended=true;
-      if(status)status.textContent="備用語音播放失敗，請確認手機語音設定";
-      vnAddTTSLog({result:"fail",source:"備用語音",reason:"speechSynthesis error",errorName:e?.error||"",fromAuto});
-    };
-    if(status)status.textContent=reason || (fromAuto?"正在自動發音...":"正在播放發音...");
-    window.speechSynthesis.speak(utter);
-    let resumeCount=0;
-    const resumeTimer=setInterval(function(){
-      resumeCount++;
-      try{window.speechSynthesis.resume();}catch(e){}
-      if(ended||resumeCount>12)clearInterval(resumeTimer);
-    },250);
-    setTimeout(function(){
-      if(!started&&!ended){
-        try{window.speechSynthesis.cancel();}catch(e){}
-        if(status)status.textContent="備用語音沒有啟動，請確認手機是否有越南文語音";
-        vnAddTTSLog({result:"fail",source:"備用語音",reason:"no start after 2600ms",fromAuto});
-      }
-    },2600);
-  }catch(e){
-    if(status)status.textContent="備用語音失敗，請確認手機語音設定";
-    vnAddTTSLog({result:"fail",source:"備用語音",reason:"exception",errorName:e?.name||"",errorMessage:e?.message||String(e),fromAuto});
-  }
-}
-function vnPlayGoogleTTS(text, fromAuto){
-  const status=$("vnVoiceStatus");
-  const url="https://translate.google.com/translate_tts?ie=UTF-8&tl=vi&client=tw-ob&q="+encodeURIComponent(text);
-  let failed=false;
-  let started=false;
-  const startedAt=Date.now();
-
-  function googleFail(reason, extra={}){
-    if(failed)return;
-    failed=true;
-    try{
-      if(vnAudio){
-        vnAudio.pause();
-        vnAudio.currentTime=0;
-        vnAudio=null;
-      }
-    }catch(e){}
-    if(status)status.textContent="Google TTS 發音失敗，請手動切換到備用語音";
-    vnAddTTSLog({result:"fail",source:"Google TTS",reason,fromAuto,url,elapsedMs:Date.now()-startedAt,...extra});
-  }
-
-  try{
-    if(status)status.textContent=fromAuto?"正在嘗試 Google 自動發音...":"正在嘗試 Google 發音...";
-    vnAudio=new Audio(url);
-    vnAudio.preload="auto";
-    vnAudio.onerror=function(){
-      const code=vnAudio && vnAudio.error ? vnAudio.error.code : "";
-      googleFail("Google TTS audio error", {audioErrorCode:code});
-    };
-    vnAudio.onplaying=function(){
-      started=true;
-      if(status)status.textContent="目前發音來源：Google TTS";
-      vnAddTTSLog({result:"start",source:"Google TTS",reason:"onplaying",fromAuto,url,elapsedMs:Date.now()-startedAt});
-    };
-    vnAudio.onended=function(){
-      if(status)status.textContent="播放完成｜來源：Google TTS";
-      vnAddTTSLog({result:"success",source:"Google TTS",reason:"ended",fromAuto,url,elapsedMs:Date.now()-startedAt});
-    };
-    if(vnSettings.rateEnabled){
-      try{vnAudio.playbackRate=vnClampRate(vnSettings.rate);}catch(e){}
-    }
-    const playPromise=vnAudio.play();
-    if(playPromise!==undefined){
-      playPromise.then(function(){
-        started=true;
-        if(status)status.textContent="目前發音來源：Google TTS";
-        vnAddTTSLog({result:"start",source:"Google TTS",reason:"play promise resolved",fromAuto,url,elapsedMs:Date.now()-startedAt});
-      }).catch(function(e){
-        googleFail("Google TTS play promise rejected", {errorName:e?.name||"",errorMessage:e?.message||String(e)});
-      });
-    }
-    setTimeout(function(){
-      if(!started&&!failed){
-        googleFail("Google TTS no start after 2600ms");
-      }
-    },2600);
-  }catch(e){
-    googleFail("Google TTS exception", {errorName:e?.name||"",errorMessage:e?.message||String(e)});
-  }
-}
-function vnSpeakFallback(){vnPlayBrowserTTS(vnGetVietnameseTextToSpeak(),false,"手動使用備用語音...")}
-function vnSpeakQuestion(fromAuto=false){
-  const text=vnGetVietnameseTextToSpeak();
-  const status=$("vnVoiceStatus");
-  if(!text){if(status)status.textContent="目前沒有可發音的單字";return;}
-  vnStopAudio();
-  if(vnSettings.voiceSource==="browser"){
-    vnPlayBrowserTTS(text,fromAuto,fromAuto?"正在自動使用備用語音...":"正在使用備用語音...");
-  }else{
-    vnPlayGoogleTTS(text,fromAuto);
-  }
-}
-
-if('speechSynthesis' in window){
-  try{
-    window.speechSynthesis.getVoices();
-    window.speechSynthesis.onvoiceschanged=function(){window.speechSynthesis.getVoices();};
-  }catch(e){}
-}
-
-function initVocabCloud(){vocabRef.on("value",snap=>{let data=snap.val();if(data&&(data.words||data.daily||data.settings)){vocabCloudData=data;vocabCloudReady=true;vnApplyData(data);vnRender()}else{let seed=vnLocalSeed();vocabCloudData={words:seed.words,daily:seed.daily,settings:vnSettings,version:"suite-v3.3-vocab"};vocabCloudReady=true;vocabRef.set({...vocabCloudData,updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>{console.error(e);setCloudStatus("vocab",false,"越南文雲端初始化失敗，請檢查 Firebase 規則")});vnApplyData(vocabCloudData);vnRender()}},err=>{console.error(err);setCloudStatus("vocab",false,"越南文 Firebase 讀取失敗")})}
-
 
 /* init */
 $("globalPinInput").addEventListener("keydown",e=>{if(e.key==="Enter")unlockSuite()});
+initTheme();
 renderHome();
 initFitnessCloud();
-initVocabCloud();
-vnRender();
 </script>
 </body>
 </html>
