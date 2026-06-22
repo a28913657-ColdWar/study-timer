@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>Yu工具箱_二合一_V5</title>
+<title>Yu工具箱_二合一_V4.5</title>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
@@ -211,7 +211,7 @@ tr:last-child td{border-bottom:none}
   <div class="card homeCard">
     <div class="section">
       <div class="title">
-        <h1>Yu工具箱 V5</h1>
+        <h1>Yu工具箱 V4.5</h1>
         <p>計時器與健身紀錄</p>
       </div>
       <div id="lockBox" class="loginPanel">
@@ -313,7 +313,7 @@ tr:last-child td{border-bottom:none}
     <button class="navBtn ghost" onclick="goHome()">← 回首頁</button>
   </div>
   <div class="cloud-status"><span id="fitnessCloudDot" class="dot"></span><span id="fitnessCloudText">雲端連線中...</span></div>
-  <div class="fitnessGuide">
+  <div class="fitnessGuide" id="fitnessGuide">
     <div class="guideStep"><b>1 選部位</b><span class="small">先選今天練的地方</span></div>
     <div class="guideStep"><b>2 選動作</b><span class="small">照順序或直接點動作</span></div>
     <div class="guideStep"><b>3 計時存檔</b><span class="small">每組完成後自動進休息</span></div>
@@ -551,7 +551,7 @@ function saveCurrent(){fitState=fitSanitizeState(fitState);fitCloudSave({current
 function loadCurrent(){if(fitnessCloudData){fitApplyData(fitnessCloudData);return}let seed=fitLocalSeed();fitState=fitSanitizeState(seed.current)}
 function getWorkout(){return WORKOUTS.find(w=>w.id===fitState.workoutId)||null}
 function getExercise(){let w=getWorkout();return w?w.exercises[fitState.exerciseIndex]:null}
-function fitUpdateStage(){let screen=fitState.screen||"workout";$("fitnessView").classList.toggle("fitStepOnly",screen==="workout"||screen==="exercises");$("fitnessView").classList.toggle("fitTimerOnly",screen==="timer");$("fitnessWorkoutSection").classList.toggle("hide",screen!=="workout");$("fitnessExerciseSection").classList.toggle("hide",screen!=="exercises");$("fitnessExerciseSaveBar").classList.toggle("hide",screen!=="exercises");$("fitLeftPanel").classList.toggle("hide",screen==="timer");$("fitMainPanel").classList.toggle("hide",screen!=="timer")}
+function fitUpdateStage(){let screen=fitState.screen||"workout";$("fitnessView").classList.toggle("fitStepOnly",screen==="workout"||screen==="exercises");$("fitnessView").classList.toggle("fitTimerOnly",screen==="timer");$("fitnessWorkoutSection").classList.toggle("hide",screen!=="workout");$("fitnessExerciseSection").classList.toggle("hide",screen!=="exercises");$("fitnessGuide").classList.toggle("hide",screen==="timer");$("fitnessExerciseSaveBar").classList.toggle("hide",screen!=="exercises");$("fitLeftPanel").classList.toggle("hide",screen==="timer");$("fitMainPanel").classList.toggle("hide",screen!=="timer")}
 function selectWorkout(id){let w=WORKOUTS.find(x=>x.id===id);if(!w)return;if(fitState.workoutId&&fitState.logs.length&&fitState.workoutId!==id){if(!confirm("目前本次訓練已有紀錄，確定切換部位？"))return}fitState.workoutId=id;fitState.exerciseIndex=0;fitState.currentSet=1;fitState.status="idle";fitState.moveStart=null;fitState.restStart=null;fitState.pendingLog=null;fitState.restTargetSec=fitGetRestSec(w.exercises[0])||60;fitState.screen="exercises";saveCurrent();renderFitnessAll();toast("已選擇："+w.label)}
 function selectExercise(i){let w=getWorkout();if(!w||!w.exercises[i])return;fitState.exerciseIndex=i;let ex=w.exercises[i];fitState.currentSet=Math.max(1,nextSetNumberForExercise(ex.name));fitState.status="idle";fitState.moveStart=null;fitState.restStart=null;fitState.pendingLog=null;fitState.restTargetSec=fitGetRestSec(ex)||60;fitState.screen="timer";fitLastAutoActual="";saveCurrent();renderFitnessAll();fitApplyActualSuggestion(true)}
 function nextSetNumberForExercise(name){return fitState.logs.filter(l=>l.exercise===name).length+1}
